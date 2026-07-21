@@ -2,8 +2,17 @@ import Link from "next/link";
 import { ArrowRight, Calculator, BarChart3, ShieldCheck } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import PricingGrid from "@/components/PricingGrid";
+import { db } from "@/db";
+import { plans } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
-export default function Home() {
+export default async function Home() {
+  // Busca os planos ativos salvos no banco de dados (sincronizados do Stripe)
+  const activePlans = await db.query.plans.findMany({
+    where: eq(plans.active, true),
+  });
+
   return (
     <div className="flex flex-col min-h-screen bg-neutral-50 text-neutral-900 selection:bg-emerald-200">
       {/* Header Unificado */}
@@ -29,7 +38,7 @@ export default function Home() {
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
-                href="/#planos"
+                href="#planos"
                 className="w-full sm:w-auto inline-flex items-center justify-center rounded-xl border border-neutral-300 bg-white px-6 py-3.5 text-base font-bold text-neutral-700 hover:bg-neutral-50 transition-colors"
               >
                 Conhecer Planos Pro
@@ -70,6 +79,14 @@ export default function Home() {
                 </div>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* Pricing Plans Section (#planos) */}
+        <section id="planos" className="bg-neutral-50 scroll-mt-20">
+          <div className="container mx-auto max-w-7xl px-4 sm:px-6 py-16 lg:py-24">
+            {/* Componente Interativo de Grade de Preços (Oculta 100% se for Pro Ativo) */}
+            <PricingGrid plans={activePlans} />
           </div>
         </section>
       </main>

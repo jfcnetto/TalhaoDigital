@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Calculator, FileText, Info, HelpCircle, Printer } from "lucide-react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
-export default function QuebraUmidadeClient() {
+export default function QuebraUmidadeClient({ isPro = false }: { isPro?: boolean }) {
   // Inputs
   const [pesoInicial, setPesoInicial] = useState<number>(30000);
   const [umidadeInicial, setUmidadeInicial] = useState<number>(18);
@@ -22,6 +22,24 @@ export default function QuebraUmidadeClient() {
   const [showValidationError, setShowValidationError] = useState<boolean>(false);
 
   const reportRef = useRef<HTMLDivElement>(null);
+
+  // Proteção Anti-PrintScreen e Anti-Cópia para Usuários Grátis
+  useEffect(() => {
+    if (isPro) return;
+
+    // 1. Bloquear tecla PrintScreen e limpar a área de transferência
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === "PrintScreen") {
+        try {
+          navigator.clipboard?.writeText("");
+        } catch (err) {}
+        alert("🔒 A captura de tela deste relatório é bloqueada no Plano Gratuito. Assine o Plano Pro para emitir e baixar o laudo em PDF!");
+      }
+    };
+
+    window.addEventListener("keyup", handleKeyUp);
+    return () => window.removeEventListener("keyup", handleKeyUp);
+  }, [isPro]);
 
   // Cálculos Agronômicos
   const pesoAposSecagem = pesoInicial * ((100 - umidadeInicial) / (100 - umidadeDesejada));
@@ -50,6 +68,10 @@ export default function QuebraUmidadeClient() {
 
   // Exportar para PDF
   const handleExportPDF = async () => {
+    if (!isPro) {
+      window.location.href = "/#planos";
+      return;
+    }
     if (!isFormValid) {
       setShowValidationError(true);
       return;
@@ -93,6 +115,10 @@ export default function QuebraUmidadeClient() {
 
   // Impressão Direta
   const handlePrint = () => {
+    if (!isPro) {
+      window.location.href = "/#planos";
+      return;
+    }
     if (!isFormValid) {
       setShowValidationError(true);
       return;
@@ -102,24 +128,38 @@ export default function QuebraUmidadeClient() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 text-neutral-900 flex flex-col selection:bg-emerald-200">
-      {/* CSS para Impressão limpa via navegador */}
+    <div 
+      className={`min-h-screen bg-neutral-50 text-neutral-900 flex flex-col selection:bg-emerald-200 ${!isPro ? "select-none" : ""}`}
+      onContextMenu={(e) => {
+        if (!isPro) {
+          e.preventDefault();
+        }
+      }}
+    >
+      {/* CSS para Impressão limpa ou Bloqueio de Impressão */}
       <style>{`
         @media print {
-          body {
-            background: white !important;
-            color: black !important;
-          }
-          header, footer, nav, button, input, .no-print, main {
-            display: none !important;
-          }
-          .print-only-container {
-            position: static !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 100% !important;
-            display: block !important;
-          }
+          ${!isPro ? `
+            html, body {
+              display: none !important;
+              visibility: hidden !important;
+            }
+          ` : `
+            body {
+              background: white !important;
+              color: black !important;
+            }
+            header, footer, nav, button, input, .no-print, main {
+              display: none !important;
+            }
+            .print-only-container {
+              position: static !important;
+              left: 0 !important;
+              top: 0 !important;
+              width: 100% !important;
+              display: block !important;
+            }
+          `}
         }
       `}</style>
 
@@ -321,21 +361,67 @@ export default function QuebraUmidadeClient() {
 
                 {/* Botões de Ação Principais */}
                 <div className="relative z-10 flex flex-col sm:flex-row gap-3 mt-4">
-                  <button
-                    onClick={handleExportPDF}
-                    className={`flex-1 inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold text-white shadow transition-all duration-150 active:scale-[0.98] ${isFormValid ? "bg-emerald-700 hover:bg-emerald-600 cursor-pointer" : "bg-neutral-600 opacity-60 cursor-not-allowed"}`}
-                  >
-                    <FileText className="h-4.5 w-4.5" />
-                    Gerar Laudo PDF
-                  </button>
-                  <button
-                    onClick={handlePrint}
-                    className={`inline-flex items-center justify-center gap-2 rounded-xl border px-5 py-3 text-sm font-bold transition-all duration-150 active:scale-[0.98] ${isFormValid ? "border-emerald-500 hover:bg-emerald-900/50 text-emerald-100 cursor-pointer" : "border-neutral-500 text-neutral-400 opacity-60 cursor-not-allowed"}`}
-                  >
-                    <Printer className="h-4.5 w-4.5" />
-                    Imprimir
-                  </button>
+                  {isPro ? (
+                    <>
+                      <button
+                        onClick={handleExportPDF}
+                        className={`flex-1 inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold text-white shadow transition-all duration-150 active:scale-[0.98] ${isFormValid ? "bg-emerald-700 hover:bg-emerald-600 cursor-pointer" : "bg-neutral-700 opacity-60 cursor-not-allowed"}`}
+                      >
+                        <FileText className="h-4.5 w-4.5" />
+                        Gerar Laudo PDF
+                      </button>
+                      <button
+                        onClick={handlePrint}
+                        className={`inline-flex items-center justify-center gap-2 rounded-xl border px-5 py-3 text-sm font-bold transition-all duration-150 active:scale-[0.98] ${isFormValid ? "border-emerald-500 hover:bg-emerald-900/50 text-emerald-100 cursor-pointer" : "border-neutral-600 text-neutral-400 opacity-60 cursor-not-allowed"}`}
+                      >
+                        <Printer className="h-4.5 w-4.5" />
+                        Imprimir
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <a
+                        href="/#planos"
+                        className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-extrabold text-amber-950 bg-amber-400 hover:bg-amber-300 shadow transition-all duration-150 active:scale-[0.98] cursor-pointer"
+                      >
+                        <span className="text-base">🔒</span>
+                        Gerar Laudo PDF (Exclusivo Pro)
+                      </a>
+                      <a
+                        href="/#planos"
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-amber-400/50 bg-amber-400/10 px-5 py-3 text-sm font-bold text-amber-200 hover:bg-amber-400/20 transition-all duration-150 cursor-pointer"
+                      >
+                        <span className="text-base">🔒</span>
+                        Imprimir
+                      </a>
+                    </>
+                  )}
                 </div>
+
+                {/* Banner CTA para Assinatura do Plano Pro caso o usuário não seja Pro */}
+                {!isPro ? (
+                  <div className="mt-4 p-4 rounded-xl bg-amber-500/10 border border-amber-400/30 space-y-2.5 text-xs text-amber-100 relative z-10">
+                    <div className="flex items-center gap-2 font-bold text-amber-300">
+                      <span className="text-base">🔒</span>
+                      <span>Emissão de Laudos em PDF e Impressão é Exclusiva do Plano Pro</span>
+                    </div>
+                    <p className="text-[11.5px] text-neutral-300 leading-relaxed">
+                      A visualização das fórmulas e resultados na tela é gratuita. Para gerar relatórios em PDF com a sua logomarca, CREA e dados do cliente, assine o <strong>Plano Pro</strong>.
+                    </p>
+                    <div className="pt-2 border-t border-amber-400/20 flex justify-end">
+                      <a
+                        href="/#planos"
+                        className="bg-amber-400 hover:bg-amber-300 text-amber-950 px-4 py-2 rounded-lg font-extrabold text-xs transition-colors shadow-sm inline-flex items-center gap-1.5"
+                      >
+                        Liberar Laudos em PDF no Plano Pro
+                      </a>
+                    </div>
+                  </div>
+                ) : !isFormValid ? (
+                  <div className="mt-3 p-3 rounded-xl bg-red-900/40 border border-red-500/30 text-xs text-red-200 relative z-10">
+                    ⚠️ Preencha os campos <strong>Responsável Técnico</strong> e <strong>Produtor</strong> no formulário para habilitar a emissão do laudo.
+                  </div>
+                ) : null}
               </div>
 
               {/* Detalhamento das Perdas */}

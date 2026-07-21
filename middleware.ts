@@ -11,6 +11,9 @@ const isPublicRoute = createRouteMatcher([
   "/api/copy-assets(.*)",
   "/convert.html",
   "/api/webhooks/clerk(.*)",
+  "/api/webhooks/stripe(.*)",
+  "/api/stripe(.*)",
+  "/api/db-migrate(.*)",
 ]);
 
 const middleware = clerkMiddleware((auth, request) => {

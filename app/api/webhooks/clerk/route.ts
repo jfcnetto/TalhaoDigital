@@ -54,23 +54,28 @@ export async function POST(req: Request) {
   const eventType = evt.type;
 
   if (eventType === 'user.created' || eventType === 'user.updated') {
-    const { id, email_addresses, first_name, last_name } = evt.data;
+    const { id, email_addresses, first_name, last_name, public_metadata } = evt.data;
 
     const primaryEmail = (email_addresses && email_addresses[0]?.email_address) || `${id}@placeholder.com`;
     const fullName = [first_name, last_name].filter(Boolean).join(' ');
 
+    // Extrai a role a partir do publicMetadata do Clerk (padrão é subscriber)
+    const metadataRole = (public_metadata as { role?: string })?.role;
+    const userRole = metadataRole === 'admin' ? 'admin' : 'subscriber';
+
     try {
-      // Salva ou atualiza o usuário no Neon Postgres
+      // Salva ou atualiza o usuário no Neon Postgres com a Role correta
       await db.insert(users).values({
         id,
         email: primaryEmail,
         name: fullName || null,
-        role: 'subscriber', // Plano base gratuito
+        role: userRole,
       }).onConflictDoUpdate({
         target: users.id,
         set: {
           email: primaryEmail,
           name: fullName || null,
+          role: userRole,
           updatedAt: new Date(),
         }
       });

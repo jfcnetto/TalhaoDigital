@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
+import { auth } from "@clerk/nextjs/server";
+import { db } from "@/db";
+import { users, subscriptions } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import QuebraUmidadeClient from "./QuebraUmidadeClient";
 
-// Otimização completa de metatags SEO para indexação no Google (H1, H2 e metatags estruturadas)
 export const metadata: Metadata = {
   title: "Simulador de Quebra de Umidade de Grãos (Desconto) - Talhão Digital",
   description: "Calcule grátis o desconto em peso e financeiro de cargas de grãos (soja, milho, etc.) devido a umidade e impurezas. Ajustado para o padrão de armazenagem brasileiro.",
@@ -29,6 +32,27 @@ export const metadata: Metadata = {
   }
 };
 
-export default function QuebraUmidadePage() {
-  return <QuebraUmidadeClient />;
+export default async function QuebraUmidadePage() {
+  const { userId } = auth();
+  let isPro = false;
+
+  if (userId) {
+    const dbUser = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+    });
+    const sub = await db.query.subscriptions.findFirst({
+      where: eq(subscriptions.userId, userId),
+    });
+
+    if (
+      dbUser?.role === 'admin' || 
+      dbUser?.isCourtesyPro || 
+      sub?.status === 'active' || 
+      sub?.status === 'trialing'
+    ) {
+      isPro = true;
+    }
+  }
+
+  return <QuebraUmidadeClient isPro={isPro} />;
 }

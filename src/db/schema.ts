@@ -6,6 +6,7 @@ export const users = pgTable('users', {
   email: text('email').notNull().unique(),
   name: text('name'),
   role: text('role', { enum: ['admin', 'subscriber'] }).default('subscriber').notNull(),
+  isCourtesyPro: boolean('is_courtesy_pro').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (table) => ({

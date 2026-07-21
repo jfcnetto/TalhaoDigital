@@ -4,6 +4,8 @@ import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ptBR } from "@clerk/localizations";
 
+import CookieBanner from "@/components/CookieBanner";
+
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -46,6 +48,7 @@ export default function RootLayout({
       <html lang="pt-BR">
         <body className={`${inter.className} min-h-screen flex flex-col`}>
           {children}
+          <CookieBanner />
         </body>
       </html>
     </ClerkProvider>

@@ -1,131 +1,239 @@
 import { NextResponse } from 'next/server';
-import { auth, currentUser } from '@clerk/nextjs/server';
+import { auth } from '@clerk/nextjs/server';
 import { db } from '@/db';
-import { users, blogPosts } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { users, blogPosts, blogCategories, blogTags, blogPostTags, blogPostRevisions, blogRedirects } from '@/db/schema';
+import { eq, desc, and } from 'drizzle-orm';
 
-// Helper para verificar se o usuário logado é administrador
-async function verifyAdmin() {
-  const { userId } = auth();
-  if (!userId) return null;
-  const caller = await db.query.users.findFirst({
-    where: eq(users.id, userId),
-  });
-  return caller?.role === 'admin' ? caller : null;
-}
-
-// 1. Obter todos os posts (Administrativo)
-export async function GET() {
+// GET: Listar todos os posts para o painel admin (com suporte a filtros por status)
+export async function GET(req: Request) {
   try {
-    const admin = await verifyAdmin();
-    if (!admin) return new Response('Unauthorized', { status: 401 });
+    const { userId } = auth();
+    if (!userId) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-    const posts = await db.query.blogPosts.findMany({
-      orderBy: (posts, { desc }) => [desc(posts.createdAt)],
+    const dbUser = await db.query.users.findFirst({
+      where: eq(users.id, userId),
     });
 
-    return NextResponse.json(posts);
+    if (dbUser?.role !== 'admin') {
+      return NextResponse.json({ error: 'Acesso negado. Apenas administradores.' }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const status = searchParams.get('status');
+
+    let posts;
+    if (status && status !== 'all') {
+      posts = await db.query.blogPosts.findMany({
+        where: eq(blogPosts.status, status as any),
+        orderBy: desc(blogPosts.createdAt),
+      });
+    } else {
+      posts = await db.query.blogPosts.findMany({
+        orderBy: desc(blogPosts.createdAt),
+      });
+    }
+
+    const categories = await db.query.blogCategories.findMany();
+    const tags = await db.query.blogTags.findMany();
+
+    return NextResponse.json({ posts, categories, tags });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-// 2. Criar Novo Post
+// POST: Criar um novo post do blog
 export async function POST(req: Request) {
   try {
-    const admin = await verifyAdmin();
-    if (!admin) return new Response('Unauthorized', { status: 401 });
+    const { userId } = auth();
+    if (!userId) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-    const data = await req.json();
-    const { title, slug, summary, contentHtml, contentJson, coverImage, seoTitle, seoDescription, category, status } = data;
+    const dbUser = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+    });
 
-    if (!title || !slug || !contentHtml || !coverImage) {
-      return NextResponse.json({ error: 'Título, Slug, Conteúdo e Imagem de Capa são obrigatórios' }, { status: 400 });
+    if (dbUser?.role !== 'admin') {
+      return NextResponse.json({ error: 'Acesso negado. Apenas administradores.' }, { status: 403 });
     }
 
-    // Criar autor baseado no nome do admin logado
-    const authorName = admin.name || 'Administrador';
-
-    const newPost = await db.insert(blogPosts).values({
+    const body = await req.json();
+    const {
       title,
-      slug: slug.toLowerCase().trim().replace(/\s+/g, '-'),
-      summary: summary || '',
+      slug,
+      summary,
       contentHtml,
-      contentJson: contentJson || null,
+      contentJson,
       coverImage,
-      seoTitle: seoTitle || title,
-      seoDescription: seoDescription || summary || '',
+      seoTitle,
+      seoDescription,
+      focusKeyword,
+      canonicalUrl,
+      categoryId,
       category,
+      status,
+      tagIds,
+    } = body;
+
+    // Verificar colisão de slug
+    const existingSlug = await db.query.blogPosts.findFirst({
+      where: eq(blogPosts.slug, slug),
+    });
+
+    if (existingSlug) {
+      return NextResponse.json({ error: 'O slug informado já está em uso por outro artigo.' }, { status: 400 });
+    }
+
+    const [newPost] = await db.insert(blogPosts).values({
+      title,
+      slug,
+      summary,
+      contentHtml,
+      contentJson,
+      coverImage,
+      seoTitle,
+      seoDescription,
+      focusKeyword: focusKeyword || null,
+      canonicalUrl: canonicalUrl || null,
+      categoryId: categoryId || null,
+      category: category || 'agricultura',
       status: status || 'draft',
-      author: authorName,
+      author: dbUser.name || 'Equipe Talhão Digital',
       publishedAt: status === 'published' ? new Date() : null,
     }).returning();
 
-    return NextResponse.json({ success: true, post: newPost[0] });
+    // Vincular Tags se fornecidas
+    if (tagIds && Array.isArray(tagIds) && tagIds.length > 0) {
+      for (const tagId of tagIds) {
+        await db.insert(blogPostTags).values({
+          postId: newPost.id,
+          tagId: Number(tagId),
+        }).onConflictDoNothing();
+      }
+    }
+
+    // Salvar primeira revisão no Histórico
+    await db.insert(blogPostRevisions).values({
+      postId: newPost.id,
+      title: newPost.title,
+      contentHtml: newPost.contentHtml,
+      summary: newPost.summary,
+      authorId: userId,
+    });
+
+    return NextResponse.json({ success: true, post: newPost });
   } catch (error: any) {
-    console.error('Erro ao criar post:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-// 3. Atualizar Post Existente
+// PUT: Editar post existente + Suporte a 301 Redirect se o slug mudar
 export async function PUT(req: Request) {
   try {
-    const admin = await verifyAdmin();
-    if (!admin) return new Response('Unauthorized', { status: 401 });
+    const { userId } = auth();
+    if (!userId) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-    const data = await req.json();
-    const { id, title, slug, summary, contentHtml, contentJson, coverImage, seoTitle, seoDescription, category, status } = data;
+    const dbUser = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+    });
 
-    if (!id || !title || !slug || !contentHtml || !coverImage) {
-      return NextResponse.json({ error: 'Campos obrigatórios ausentes' }, { status: 400 });
+    if (dbUser?.role !== 'admin') {
+      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
 
-    const updatedPost = await db.update(blogPosts)
+    const body = await req.json();
+    const { id, title, slug, summary, contentHtml, contentJson, coverImage, seoTitle, seoDescription, focusKeyword, canonicalUrl, categoryId, category, status, tagIds } = body;
+
+    const currentPost = await db.query.blogPosts.findFirst({
+      where: eq(blogPosts.id, id),
+    });
+
+    if (!currentPost) {
+      return NextResponse.json({ error: 'Artigo não encontrado.' }, { status: 404 });
+    }
+
+    // Se o slug mudou, salvar regra de 301 Redirect automático
+    if (currentPost.slug !== slug) {
+      await db.insert(blogRedirects).values({
+        oldSlug: currentPost.slug,
+        newSlug: slug,
+      }).onConflictDoNothing();
+    }
+
+    // Gravar versão anterior no histórico de revisões
+    await db.insert(blogPostRevisions).values({
+      postId: currentPost.id,
+      title: currentPost.title,
+      contentHtml: currentPost.contentHtml,
+      summary: currentPost.summary,
+      authorId: userId,
+    });
+
+    const [updatedPost] = await db.update(blogPosts)
       .set({
         title,
-        slug: slug.toLowerCase().trim().replace(/\s+/g, '-'),
-        summary: summary || '',
+        slug,
+        summary,
         contentHtml,
-        contentJson: contentJson || null,
+        contentJson,
         coverImage,
-        seoTitle: seoTitle || title,
-        seoDescription: seoDescription || summary || '',
-        category,
-        status: status || 'draft',
-        publishedAt: status === 'published' ? new Date() : null,
+        seoTitle,
+        seoDescription,
+        focusKeyword: focusKeyword || null,
+        canonicalUrl: canonicalUrl || null,
+        categoryId: categoryId || null,
+        category: category || 'agricultura',
+        status,
+        publishedAt: status === 'published' && !currentPost.publishedAt ? new Date() : currentPost.publishedAt,
         updatedAt: new Date(),
       })
       .where(eq(blogPosts.id, id))
       .returning();
 
-    return NextResponse.json({ success: true, post: updatedPost[0] });
+    // Sincronizar Tags
+    if (tagIds && Array.isArray(tagIds)) {
+      await db.delete(blogPostTags).where(eq(blogPostTags.postId, id));
+      for (const tagId of tagIds) {
+        await db.insert(blogPostTags).values({
+          postId: id,
+          tagId: Number(tagId),
+        }).onConflictDoNothing();
+      }
+    }
+
+    return NextResponse.json({ success: true, post: updatedPost });
   } catch (error: any) {
-    console.error('Erro ao atualizar post:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-// 4. Excluir Post
+// DELETE: Mover para a Lixeira ou Excluir Definitivamente
 export async function DELETE(req: Request) {
   try {
-    const admin = await verifyAdmin();
-    if (!admin) return new Response('Unauthorized', { status: 401 });
+    const { userId } = auth();
+    if (!userId) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-    const { searchParams } = new URL(req.url);
-    const idStr = searchParams.get('id');
+    const dbUser = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+    });
 
-    if (!idStr) {
-      return NextResponse.json({ error: 'ID do post é obrigatório' }, { status: 400 });
+    if (dbUser?.role !== 'admin') {
+      return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
 
-    const id = Number(idStr);
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+    const permanent = searchParams.get('permanent') === 'true';
 
-    await db.delete(blogPosts).where(eq(blogPosts.id, id));
+    if (!id) return NextResponse.json({ error: 'ID do artigo obrigatório' }, { status: 400 });
 
-    return NextResponse.json({ success: true, message: 'Post excluído com sucesso' });
+    if (permanent) {
+      await db.delete(blogPosts).where(eq(blogPosts.id, Number(id)));
+    } else {
+      await db.update(blogPosts).set({ status: 'trash' }).where(eq(blogPosts.id, Number(id)));
+    }
+
+    return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('Erro ao deletar post:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

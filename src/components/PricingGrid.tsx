@@ -25,8 +25,9 @@ export default function PricingGrid({ plans }: PricingGridProps) {
     }
   }, [isSignedIn]);
 
-  // Se o usuário for assinante Pro / Admin / Cortesia, oculta 100% a seção de planos da Home Page
-  if (userStatus?.isPro) {
+  // Se o usuário for comprovadamente assinante Pro / Admin / Cortesia (isPro === true), oculta a seção de planos
+  // Se for visitante anônimo ou usuário do Plano Gratuito, a tabela de planos aparece normalmente!
+  if (userStatus?.isPro === true) {
     return null;
   }
 

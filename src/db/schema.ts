@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, integer, jsonb, serial, index, uniqueIndex } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, boolean, integer, jsonb, serial, index, uniqueIndex, primaryKey } from 'drizzle-orm/pg-core';
 
 // 1. Tabela de Usuários (Espelho do Clerk Auth)
 export const users = pgTable('users', {
@@ -58,7 +58,25 @@ export const reports = pgTable('reports', {
   userIdIdx: index('report_user_idx').on(table.userId),
 }));
 
-// 5. Tabela de Posts do Blog
+// 5. Tabela de Categorias do Blog (Agricultura, Pecuária, Financeiro/Gestão)
+export const blogCategories = pgTable('blog_categories', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  slug: text('slug').notNull().unique(),
+  description: text('description'),
+  area: text('area', { enum: ['agricultura', 'pecuaria', 'financeiro'] }).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 6. Tabela de Tags do Blog (Granular)
+export const blogTags = pgTable('blog_tags', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  slug: text('slug').notNull().unique(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 7. Tabela de Posts do Blog (Estilo WordPress)
 export const blogPosts = pgTable('blog_posts', {
   id: serial('id').primaryKey(),
   title: text('title').notNull(),
@@ -69,8 +87,11 @@ export const blogPosts = pgTable('blog_posts', {
   coverImage: text('cover_image').notNull(), // URL no Cloudflare R2
   seoTitle: text('seo_title').notNull(),
   seoDescription: text('seo_description').notNull(),
+  focusKeyword: text('focus_keyword'),
+  canonicalUrl: text('canonical_url'),
+  categoryId: integer('category_id').references(() => blogCategories.id),
   category: text('category', { enum: ['agricultura', 'pecuaria', 'financeiro'] }).notNull(),
-  status: text('status', { enum: ['draft', 'published'] }).default('draft').notNull(),
+  status: text('status', { enum: ['draft', 'scheduled', 'published', 'trash'] }).default('draft').notNull(),
   author: text('author').notNull(),
   publishedAt: timestamp('published_at'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -79,10 +100,69 @@ export const blogPosts = pgTable('blog_posts', {
   slugIdx: uniqueIndex('blog_slug_idx').on(table.slug),
 }));
 
-// 6. Registro de Uso das Calculadoras (Analytics simples para o Painel Admin)
+// 8. Tabela Pivô Post <-> Tags
+export const blogPostTags = pgTable('blog_post_tags', {
+  postId: integer('post_id').notNull().references(() => blogPosts.id, { onDelete: 'cascade' }),
+  tagId: integer('tag_id').notNull().references(() => blogTags.id, { onDelete: 'cascade' }),
+}, (table) => ({
+  pk: primaryKey({ columns: [table.postId, table.tagId] }),
+}));
+
+// 9. Tabela de Biblioteca de Mídia (Cloudflare R2 - Reutilizável)
+export const mediaLibrary = pgTable('media_library', {
+  id: serial('id').primaryKey(),
+  filename: text('filename').notNull(),
+  url: text('url').notNull(), // URL do R2
+  key: text('key').notNull(), // Key no R2
+  altText: text('alt_text').notNull(),
+  mimeType: text('mime_type').notNull(),
+  fileSize: integer('file_size').notNull(),
+  width: integer('width'),
+  height: integer('height'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 10. Tabela de Histórico de Revisões de Posts (Versões anteriores estilo WP)
+export const blogPostRevisions = pgTable('blog_post_revisions', {
+  id: serial('id').primaryKey(),
+  postId: integer('post_id').notNull().references(() => blogPosts.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(),
+  contentHtml: text('content_html').notNull(),
+  summary: text('summary'),
+  authorId: text('author_id').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 11. Tabela de Redirecionamentos 301 (Redirecionamento automático se mudar slug)
+export const blogRedirects = pgTable('blog_redirects', {
+  id: serial('id').primaryKey(),
+  oldSlug: text('old_slug').notNull().unique(),
+  newSlug: text('new_slug').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 12. Tabela de Comentários e Moderação do Blog
+export const blogComments = pgTable('blog_comments', {
+  id: serial('id').primaryKey(),
+  postId: integer('post_id').notNull().references(() => blogPosts.id, { onDelete: 'cascade' }),
+  authorName: text('author_name').notNull(),
+  authorEmail: text('author_email').notNull(),
+  content: text('content').notNull(),
+  status: text('status', { enum: ['pending', 'approved', 'spam', 'trash'] }).default('pending').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 13. Tabela de Captura de Newsletter (Leads)
+export const blogNewsletters = pgTable('blog_newsletters', {
+  id: serial('id').primaryKey(),
+  email: text('email').notNull().unique(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// 14. Registro de Uso das Calculadoras (Analytics simples para o Painel Admin)
 export const toolUsageEvents = pgTable('tool_usage_events', {
   id: serial('id').primaryKey(),
-  userId: text('user_id').references(() => users.id, { onDelete: 'set null' }), // Null se visitante anônimo
+  userId: text('user_id').references(() => users.id, { onDelete: 'set null' }),
   toolId: text('tool_id').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => ({

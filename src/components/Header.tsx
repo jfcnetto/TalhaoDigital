@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { UserButton, SignedIn, SignedOut, useUser } from "@clerk/nextjs";
-import { ChevronDown, Wheat, Sprout, Settings, ShieldCheck } from "lucide-react";
+import { ChevronDown, Wheat, Sprout, Settings, ShieldCheck, BookOpen } from "lucide-react";
 
 export default function Header() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -96,7 +96,7 @@ export default function Header() {
           </div>
 
           <Link href="/blog" className="hover:text-emerald-800 transition-colors py-2">Blog</Link>
-          {!userStatus?.isPro && (
+          {userStatus?.isPro !== true && (
             <Link href="/#planos" className="hover:text-emerald-800 transition-colors py-2">Planos</Link>
           )}
           <Link href="/contato" className="hover:text-emerald-800 transition-colors py-2">Contato</Link>
@@ -112,6 +112,11 @@ export default function Header() {
                     label="Painel Administrativo"
                     labelIcon={<ShieldCheck className="h-4 w-4 text-emerald-800" />}
                     href="/admin"
+                  />
+                  <UserButton.Link
+                    label="Gerenciamento do Blog"
+                    labelIcon={<BookOpen className="h-4 w-4 text-emerald-800" />}
+                    href="/admin/blog"
                   />
                 </UserButton.MenuItems>
               </UserButton>

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { db } from "@/db";
 import { users, subscriptions } from "@/db/schema";
 import { eq } from "drizzle-orm";
@@ -34,9 +34,10 @@ export const metadata: Metadata = {
 
 export default async function QuebraUmidadePage() {
   const { userId } = auth();
+  const user = await currentUser();
   let isPro = false;
 
-  if (userId) {
+  if (userId && user) {
     const dbUser = await db.query.users.findFirst({
       where: eq(users.id, userId),
     });
@@ -44,8 +45,10 @@ export default async function QuebraUmidadePage() {
       where: eq(subscriptions.userId, userId),
     });
 
+    const isAdmin = user.publicMetadata?.role === 'admin' || dbUser?.role === 'admin';
+
     if (
-      dbUser?.role === 'admin' || 
+      isAdmin || 
       dbUser?.isCourtesyPro || 
       sub?.status === 'active' || 
       sub?.status === 'trialing'

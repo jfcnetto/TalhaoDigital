@@ -105,6 +105,88 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
 
   // --- FLUXO 1: VISÃO DE ADMINISTRADOR DO SISTEMA ---
   if (isAdmin) {
+    // Garantia de migração de colunas e tabelas do Blog no Neon Postgres
+    try {
+      const { sql } = await import('drizzle-orm');
+      await db.execute(sql`
+        ALTER TABLE blog_posts 
+        ADD COLUMN IF NOT EXISTS focus_keyword text,
+        ADD COLUMN IF NOT EXISTS canonical_url text,
+        ADD COLUMN IF NOT EXISTS category_id integer;
+      `);
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS blog_categories (
+          id SERIAL PRIMARY KEY,
+          name TEXT NOT NULL,
+          slug TEXT NOT NULL UNIQUE,
+          description TEXT,
+          area TEXT NOT NULL,
+          created_at TIMESTAMP DEFAULT NOW() NOT NULL
+        );
+      `);
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS blog_tags (
+          id SERIAL PRIMARY KEY,
+          name TEXT NOT NULL,
+          slug TEXT NOT NULL UNIQUE,
+          created_at TIMESTAMP DEFAULT NOW() NOT NULL
+        );
+      `);
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS blog_post_tags (
+          post_id INTEGER NOT NULL REFERENCES blog_posts(id) ON DELETE CASCADE,
+          tag_id INTEGER NOT NULL REFERENCES blog_tags(id) ON DELETE CASCADE,
+          PRIMARY KEY (post_id, tag_id)
+        );
+      `);
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS media_library (
+          id SERIAL PRIMARY KEY,
+          filename TEXT NOT NULL,
+          url TEXT NOT NULL,
+          key TEXT NOT NULL,
+          alt_text TEXT NOT NULL,
+          mime_type TEXT NOT NULL,
+          file_size INTEGER NOT NULL,
+          width INTEGER,
+          height INTEGER,
+          created_at TIMESTAMP DEFAULT NOW() NOT NULL
+        );
+      `);
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS blog_post_revisions (
+          id SERIAL PRIMARY KEY,
+          post_id INTEGER NOT NULL REFERENCES blog_posts(id) ON DELETE CASCADE,
+          title TEXT NOT NULL,
+          content_html TEXT NOT NULL,
+          summary TEXT,
+          author_id TEXT NOT NULL,
+          created_at TIMESTAMP DEFAULT NOW() NOT NULL
+        );
+      `);
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS blog_redirects (
+          id SERIAL PRIMARY KEY,
+          old_slug TEXT NOT NULL UNIQUE,
+          new_slug TEXT NOT NULL,
+          created_at TIMESTAMP DEFAULT NOW() NOT NULL
+        );
+      `);
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS blog_comments (
+          id SERIAL PRIMARY KEY,
+          post_id INTEGER NOT NULL REFERENCES blog_posts(id) ON DELETE CASCADE,
+          author_name TEXT NOT NULL,
+          author_email TEXT NOT NULL,
+          content TEXT NOT NULL,
+          status TEXT DEFAULT 'pending' NOT NULL,
+          created_at TIMESTAMP DEFAULT NOW() NOT NULL
+        );
+      `);
+    } catch (migErr) {
+      console.error("Erro na auto-migração do Blog:", migErr);
+    }
+
     const allUsers = await db.query.users.findMany({
       orderBy: desc(users.createdAt),
     });

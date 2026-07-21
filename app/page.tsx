@@ -1,41 +1,13 @@
 import Link from "next/link";
-import { UserButton, SignedIn, SignedOut } from "@clerk/nextjs";
 import { ArrowRight, Calculator, BarChart3, ShieldCheck } from "lucide-react";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 
 export default function Home() {
   return (
     <div className="flex flex-col min-h-screen bg-neutral-50 text-neutral-900 selection:bg-emerald-200">
-      {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b border-neutral-200 bg-white/80 backdrop-blur-md">
-        <div className="container mx-auto flex h-24 max-w-7xl items-center justify-between px-4 sm:px-6">
-          <Link href="/" className="flex items-center group">
-            <img 
-              src="/logo.svg" 
-              alt="Talhão Digital" 
-              className="h-16 w-auto object-contain group-hover:scale-[1.02] transition-transform duration-200" 
-            />
-          </Link>
-
-          <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-neutral-600">
-            <Link href="/ferramentas" className="hover:text-emerald-800 transition-colors">Calculadoras</Link>
-            <Link href="/blog" className="hover:text-emerald-800 transition-colors">Blog</Link>
-            <Link href="/#planos" className="hover:text-emerald-800 transition-colors">Planos</Link>
-          </nav>
-
-          <div className="flex items-center gap-4">
-            <SignedIn>
-              <Link
-                href="/dashboard"
-                className="text-sm font-medium text-emerald-800 hover:text-emerald-950 transition-colors"
-              >
-                Painel
-              </Link>
-              <UserButton afterSignOutUrl="/" />
-            </SignedIn>
-            <Outsiders />
-          </div>
-        </div>
-      </header>
+      {/* Header Unificado */}
+      <Header />
 
       {/* Hero Section */}
       <main className="flex-1">
@@ -50,7 +22,7 @@ export default function Home() {
             </p>
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
-                href="/ferramentas"
+                href="/ferramentas/quebra-umidade"
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-800 px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-emerald-900/10 hover:bg-emerald-900 hover:shadow-xl transition-all duration-200"
               >
                 Ver Calculadoras
@@ -102,38 +74,8 @@ export default function Home() {
         </section>
       </main>
 
-      {/* Footer */}
-      <footer className="bg-neutral-900 text-neutral-400 py-12 border-t border-neutral-800">
-        <div className="container mx-auto max-w-7xl px-4 sm:px-6 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2">
-            <img src="/logo.svg" alt="Talhão Digital" className="h-10 w-auto opacity-80 invert" />
-            <span className="text-xs">© 2026. Todos os direitos reservados.</span>
-          </div>
-          <div className="flex gap-6 text-sm">
-            <Link href="/termos" className="hover:text-white transition-colors">Termos de Uso</Link>
-            <Link href="/privacidade" className="hover:text-white transition-colors">Privacidade</Link>
-          </div>
-        </div>
-      </footer>
+      {/* Rodapé Unificado */}
+      <Footer />
     </div>
-  );
-}
-
-function Outsiders() {
-  return (
-    <SignedOut>
-      <Link
-        href="/sign-in"
-        className="text-sm font-medium text-neutral-600 hover:text-emerald-800 transition-colors"
-      >
-        Entrar
-      </Link>
-      <Link
-        href="/sign-up"
-        className="inline-flex items-center justify-center rounded-lg bg-emerald-800 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-950 hover:shadow transition-all duration-200"
-      >
-        Testar Grátis
-      </Link>
-    </SignedOut>
   );
 }

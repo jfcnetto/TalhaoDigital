@@ -53,14 +53,10 @@ export async function POST(req: Request) {
   // 5. Processar o evento verificado
   const eventType = evt.type;
 
-  if (eventType === 'user.created') {
+  if (eventType === 'user.created' || eventType === 'user.updated') {
     const { id, email_addresses, first_name, last_name } = evt.data;
 
-    const primaryEmail = email_addresses && email_addresses[0]?.email_address;
-    if (!primaryEmail) {
-      return new Response('Error: User has no email address', { status: 400 });
-    }
-
+    const primaryEmail = (email_addresses && email_addresses[0]?.email_address) || `${id}@placeholder.com`;
     const fullName = [first_name, last_name].filter(Boolean).join(' ');
 
     try {

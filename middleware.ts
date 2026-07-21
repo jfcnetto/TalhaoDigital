@@ -10,6 +10,7 @@ const isPublicRoute = createRouteMatcher([
   "/api/save-image(.*)",
   "/api/copy-assets(.*)",
   "/convert.html",
+  "/api/webhooks/clerk(.*)",
 ]);
 
 const middleware = clerkMiddleware((auth, request) => {

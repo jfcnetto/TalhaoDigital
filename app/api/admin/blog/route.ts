@@ -1,8 +1,19 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { db } from '@/db';
 import { users, blogPosts, blogCategories, blogTags, blogPostTags, blogPostRevisions, blogRedirects } from '@/db/schema';
 import { eq, desc, and } from 'drizzle-orm';
+
+// Função utilitária para checar Admin no Clerk e no Postgres
+async function checkAdmin(userId: string) {
+  const user = await currentUser();
+  const dbUser = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+  });
+
+  const isAdmin = user?.publicMetadata?.role === 'admin' || dbUser?.role === 'admin';
+  return { isAdmin, dbUser };
+}
 
 // GET: Listar todos os posts para o painel admin (com suporte a filtros por status)
 export async function GET(req: Request) {
@@ -10,11 +21,8 @@ export async function GET(req: Request) {
     const { userId } = auth();
     if (!userId) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.id, userId),
-    });
-
-    if (dbUser?.role !== 'admin') {
+    const { isAdmin } = await checkAdmin(userId);
+    if (!isAdmin) {
       return NextResponse.json({ error: 'Acesso negado. Apenas administradores.' }, { status: 403 });
     }
 
@@ -48,11 +56,8 @@ export async function POST(req: Request) {
     const { userId } = auth();
     if (!userId) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.id, userId),
-    });
-
-    if (dbUser?.role !== 'admin') {
+    const { isAdmin, dbUser } = await checkAdmin(userId);
+    if (!isAdmin) {
       return NextResponse.json({ error: 'Acesso negado. Apenas administradores.' }, { status: 403 });
     }
 
@@ -97,7 +102,7 @@ export async function POST(req: Request) {
       categoryId: categoryId || null,
       category: category || 'agricultura',
       status: status || 'draft',
-      author: dbUser.name || 'Equipe Talhão Digital',
+      author: dbUser?.name || 'Equipe Talhão Digital',
       publishedAt: status === 'published' ? new Date() : null,
     }).returning();
 
@@ -132,11 +137,8 @@ export async function PUT(req: Request) {
     const { userId } = auth();
     if (!userId) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.id, userId),
-    });
-
-    if (dbUser?.role !== 'admin') {
+    const { isAdmin } = await checkAdmin(userId);
+    if (!isAdmin) {
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
 
@@ -212,11 +214,8 @@ export async function DELETE(req: Request) {
     const { userId } = auth();
     if (!userId) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.id, userId),
-    });
-
-    if (dbUser?.role !== 'admin') {
+    const { isAdmin } = await checkAdmin(userId);
+    if (!isAdmin) {
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
 

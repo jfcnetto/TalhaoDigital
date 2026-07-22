@@ -1,16 +1,23 @@
 import Link from "next/link";
-import { ArrowRight, Calculator, BarChart3, ShieldCheck } from "lucide-react";
+import { ArrowRight, Calculator, BarChart3, ShieldCheck, Calendar, User, BookOpen } from "lucide-react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PricingGrid from "@/components/PricingGrid";
 import { db } from "@/db";
-import { plans } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { plans, blogPosts } from "@/db/schema";
+import { eq, desc } from "drizzle-orm";
 
 export default async function Home() {
   // Busca os planos ativos salvos no banco de dados (sincronizados do Stripe)
   const activePlans = await db.query.plans.findMany({
     where: eq(plans.active, true),
+  });
+
+  // Busca os 3 artigos publicados mais recentes
+  const recentPosts = await db.query.blogPosts.findMany({
+    where: eq(blogPosts.status, "published"),
+    orderBy: desc(blogPosts.publishedAt),
+    limit: 3,
   });
 
   return (
@@ -81,6 +88,91 @@ export default async function Home() {
             </div>
           </div>
         </section>
+
+        {/* Latest Blog Posts Section */}
+        {recentPosts && recentPosts.length > 0 && (
+          <section className="py-16 bg-white border-b border-neutral-200">
+            <div className="container mx-auto max-w-7xl px-4 sm:px-6">
+              <div className="text-center max-w-3xl mx-auto space-y-4 mb-12">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-semibold">
+                  <BookOpen className="h-3.5 w-3.5" />
+                  Nosso Blog
+                </div>
+                <h2 className="text-3xl font-extrabold tracking-tight text-neutral-900 sm:text-4xl">
+                  Últimos Artigos & <span className="text-emerald-800">Diagnósticos</span>
+                </h2>
+                <p className="text-neutral-500 text-sm">
+                  Fique por dentro das novidades técnicas e melhores práticas agronômicas direto no campo.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {recentPosts.map((post) => (
+                  <article key={post.id} className="bg-neutral-50 border border-neutral-200 rounded-3xl overflow-hidden shadow-xs hover:shadow-xl transition-all duration-300 flex flex-col group">
+                    <div className="aspect-video relative overflow-hidden bg-neutral-100">
+                      <img
+                        src={post.coverImage || '/logo.svg'}
+                        alt={post.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute top-3 left-3">
+                        <span className="bg-emerald-950/80 backdrop-blur-md text-white text-[10px] font-extrabold uppercase tracking-wider px-3 py-1 rounded-full border border-emerald-700/50">
+                          {post.category}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3 text-[11px] text-neutral-400 font-medium">
+                          <span className="flex items-center gap-1">
+                            <User className="h-3 w-3" />
+                            {post.author}
+                          </span>
+                          <span>•</span>
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {post.publishedAt ? new Date(post.publishedAt).toLocaleDateString('pt-BR') : new Date(post.createdAt).toLocaleDateString('pt-BR')}
+                          </span>
+                        </div>
+
+                        <h3 className="font-extrabold text-base text-neutral-900 group-hover:text-emerald-800 transition-colors leading-snug line-clamp-2">
+                          <Link href={`/blog/${post.slug}`}>
+                            {post.title}
+                          </Link>
+                        </h3>
+
+                        <p className="text-neutral-500 text-xs leading-relaxed line-clamp-2">
+                          {post.summary}
+                        </p>
+                      </div>
+
+                      <div className="pt-4 border-t border-neutral-150 flex items-center justify-between">
+                        <Link
+                          href={`/blog/${post.slug}`}
+                          className="text-emerald-800 font-extrabold text-xs flex items-center gap-1 group-hover:gap-2 transition-all"
+                        >
+                          Ler Artigo Completo
+                          <ArrowRight className="h-3.5 w-3.5" />
+                        </Link>
+                      </div>
+                    </div>
+                  </article>
+                ))}
+              </div>
+              
+              <div className="text-center mt-10">
+                <Link
+                  href="/blog"
+                  className="inline-flex items-center justify-center gap-1.5 px-5 py-2.5 rounded-xl border border-neutral-300 bg-white hover:bg-neutral-50 text-neutral-700 font-bold text-xs transition-colors"
+                >
+                  Ver Todos os Artigos
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Pricing Plans Section (#planos) */}
         <section id="planos" className="bg-neutral-50 scroll-mt-20">

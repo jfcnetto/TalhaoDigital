@@ -58,3 +58,169 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
+
+/* --- ESTILOS DE TIPOGRAFIA E RENDERIZAÇÃO HTML PARA ARTIGOS DO BLOG & EDITOR --- */
+.prose h1, .blog-post h1 {
+  font-size: 1.875rem !important;
+  line-height: 2.25rem !important;
+  font-weight: 800 !important;
+  color: #111827 !important;
+  margin-top: 1.5rem !important;
+  margin-bottom: 1rem !important;
+  letter-spacing: -0.025em !important;
+}
+
+.prose h2, .blog-post h2 {
+  font-size: 1.5rem !important;
+  line-height: 2rem !important;
+  font-weight: 700 !important;
+  color: #111827 !important;
+  margin-top: 1.75rem !important;
+  margin-bottom: 0.75rem !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  padding-bottom: 0.5rem !important;
+}
+
+.prose h3, .blog-post h3 {
+  font-size: 1.25rem !important;
+  line-height: 1.75rem !important;
+  font-weight: 700 !important;
+  color: #1f2937 !important;
+  margin-top: 1.5rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.prose h4, .blog-post h4 {
+  font-size: 1.125rem !important;
+  line-height: 1.5rem !important;
+  font-weight: 700 !important;
+  color: #1f2937 !important;
+  margin-top: 1.25rem !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.prose p, .blog-post p {
+  color: #374151 !important;
+  line-height: 1.75 !important;
+  margin-bottom: 1rem !important;
+}
+
+.prose p.lead, .blog-post p.lead {
+  font-size: 1.125rem !important;
+  line-height: 1.75rem !important;
+  color: #374151 !important;
+  font-weight: 500 !important;
+  border-left: 4px solid #065f46 !important;
+  padding-left: 1rem !important;
+  background-color: #ecfdf5 !important;
+  padding-top: 0.75rem !important;
+  padding-bottom: 0.75rem !important;
+  border-top-right-radius: 0.75rem !important;
+  border-bottom-right-radius: 0.75rem !important;
+  margin-bottom: 1.5rem !important;
+}
+
+.prose blockquote, .blog-post blockquote {
+  border-left: 4px solid #065f46 !important;
+  background-color: #f9fafb !important;
+  padding: 1rem 1.25rem !important;
+  border-top-right-radius: 1rem !important;
+  border-bottom-right-radius: 1rem !important;
+  margin-top: 1.5rem !important;
+  margin-bottom: 1.5rem !important;
+  font-style: italic !important;
+  color: #111827 !important;
+  font-weight: 600 !important;
+}
+
+.prose ul, .blog-post ul {
+  list-style-type: disc !important;
+  list-style-position: inside !important;
+  margin-bottom: 1rem !important;
+  color: #374151 !important;
+}
+
+.prose ol, .blog-post ol {
+  list-style-type: decimal !important;
+  list-style-position: inside !important;
+  margin-bottom: 1rem !important;
+  color: #374151 !important;
+}
+
+.prose li, .blog-post li {
+  margin-bottom: 0.5rem !important;
+  margin-left: 0.5rem !important;
+}
+
+.prose hr, .blog-post hr {
+  margin-top: 1.5rem !important;
+  margin-bottom: 1.5rem !important;
+  border-color: #e5e7eb !important;
+}
+
+.prose img, .blog-post img {
+  width: 100% !important;
+  border-radius: 1rem !important;
+  border: 1px solid #e5e7eb !important;
+  margin-top: 1.5rem !important;
+  margin-bottom: 1.5rem !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+.prose strong, .blog-post strong {
+  font-weight: 800 !important;
+  color: #111827 !important;
+}
+
+.prose header, .blog-post header {
+  margin-bottom: 1.5rem !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  padding-bottom: 1rem !important;
+}
+
+.prose section, .blog-post section {
+  margin-top: 1.5rem !important;
+  margin-bottom: 1.5rem !important;
+}
+
+.prose [style*="text-align: center"], .blog-post [style*="text-align: center"],
+.text-center, .text-center-override, .prose .text-center, .prose .text-center-override, .blog-post .text-center,
+.prose p.text-center, .prose h1.text-center, .prose h2.text-center, .prose h3.text-center, .prose h4.text-center,
+.prose img.text-center, .prose blockquote.text-center, .prose li.text-center,
+.prose p.text-center-override, .prose h1.text-center-override, .prose img.text-center-override, .prose blockquote.text-center-override, .prose li.text-center-override {
+  text-align: center !important;
+  display: block !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+.prose [style*="text-align: right"], .blog-post [style*="text-align: right"],
+.text-right, .text-right-override, .prose .text-right, .prose .text-right-override, .blog-post .text-right,
+.prose p.text-right, .prose h1.text-right, .prose h2.text-right, .prose h3.text-right, .prose h4.text-right,
+.prose img.text-right, .prose blockquote.text-right, .prose li.text-right,
+.prose p.text-right-override, .prose h1.text-right-override, .prose img.text-right-override, .prose blockquote.text-right-override, .prose li.text-right-override {
+  text-align: right !important;
+  display: block !important;
+  margin-left: auto !important;
+  margin-right: 0 !important;
+}
+
+.prose [style*="text-align: justify"], .blog-post [style*="text-align: justify"],
+.text-justify, .text-justify-override, .prose .text-justify, .prose .text-justify-override, .blog-post .text-justify,
+.prose p.text-justify, .prose h1.text-justify, .prose h2.text-justify, .prose h3.text-justify, .prose h4.text-justify,
+.prose img.text-justify, .prose blockquote.text-justify, .prose li.text-justify,
+.prose p.text-justify-override, .prose h1.text-justify-override, .prose img.text-justify-override, .prose blockquote.text-justify-override, .prose li.text-justify-override {
+  text-align: justify !important;
+  display: block !important;
+}
+
+.prose [style*="text-align: left"], .blog-post [style*="text-align: left"],
+.text-left, .text-left-override, .prose .text-left, .prose .text-left-override, .blog-post .text-left,
+.prose p.text-left, .prose h1.text-left, .prose h2.text-left, .prose h3.text-left, .prose h4.text-left,
+.prose img.text-left, .prose blockquote.text-left, .prose li.text-left,
+.prose p.text-left-override, .prose h1.text-left-override, .prose img.text-left-override, .prose blockquote.text-left-override, .prose li.text-left-override {
+  text-align: left !important;
+  display: block !important;
+  margin-left: 0 !important;
+  margin-right: auto !important;
+}

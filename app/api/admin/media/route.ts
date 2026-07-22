@@ -1,8 +1,16 @@
 import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { db } from '@/db';
 import { users, mediaLibrary } from '@/db/schema';
 import { eq, desc } from 'drizzle-orm';
+
+async function checkAdmin(userId: string) {
+  const user = await currentUser();
+  const dbUser = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+  });
+  return user?.publicMetadata?.role === 'admin' || dbUser?.role === 'admin';
+}
 
 // GET: Listar todas as mídias salvas na Biblioteca
 export async function GET() {
@@ -10,11 +18,8 @@ export async function GET() {
     const { userId } = auth();
     if (!userId) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.id, userId),
-    });
-
-    if (dbUser?.role !== 'admin') {
+    const isAdmin = await checkAdmin(userId);
+    if (!isAdmin) {
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
 
@@ -34,11 +39,8 @@ export async function POST(req: Request) {
     const { userId } = auth();
     if (!userId) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.id, userId),
-    });
-
-    if (dbUser?.role !== 'admin') {
+    const isAdmin = await checkAdmin(userId);
+    if (!isAdmin) {
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
 
@@ -50,29 +52,63 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Nenhum arquivo enviado.' }, { status: 400 });
     }
 
-    // Fazer upload para o R2 via endpoint de upload existente
-    const uploadFormData = new FormData();
-    uploadFormData.append('file', file);
+    // Processar arquivo
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const extension = file.name.split('.').pop() || 'png';
+    const timestamp = Date.now();
+    const filename = `blog-media-${timestamp}.${extension}`;
+    
+    let publicUrl = '';
+    const { PutObjectCommand, S3Client } = await import('@aws-sdk/client-s3');
 
-    const uploadRes = await fetch(new URL('/api/admin/upload', req.url).toString(), {
-      method: 'POST',
-      body: uploadFormData,
-      headers: {
-        cookie: req.headers.get('cookie') || '',
+    // Tentar Upload para Cloudflare R2 se configurado TOTALMENTE
+    if (
+      process.env.CLOUDFLARE_R2_ACCESS_KEY_ID &&
+      process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY &&
+      process.env.CLOUDFLARE_R2_ENDPOINT &&
+      process.env.NEXT_PUBLIC_R2_PUBLIC_URL
+    ) {
+      try {
+        const r2Client = new S3Client({
+          region: 'auto',
+          endpoint: process.env.CLOUDFLARE_R2_ENDPOINT,
+          credentials: {
+            accessKeyId: process.env.CLOUDFLARE_R2_ACCESS_KEY_ID,
+            secretAccessKey: process.env.CLOUDFLARE_R2_SECRET_ACCESS_KEY,
+          },
+        });
+
+        const bucketName = process.env.CLOUDFLARE_R2_BUCKET_NAME || 'talhaodigital-storage';
+
+        await r2Client.send(
+          new PutObjectCommand({
+            Bucket: bucketName,
+            Key: filename,
+            Body: buffer,
+            ContentType: file.type,
+          })
+        );
+
+        // Somente usamos a URL pública configurada (nunca deduzida)
+        publicUrl = `${process.env.NEXT_PUBLIC_R2_PUBLIC_URL.replace(/\/$/, '')}/${filename}`;
+      } catch (r2Err) {
+        console.warn('Falha no R2, gerando fallback seguro Base64:', r2Err);
       }
-    });
+    } else {
+      console.warn('R2 incompleto (Falta NEXT_PUBLIC_R2_PUBLIC_URL). Usando Base64 fallback.');
+    }
 
-    const uploadData = await uploadRes.json();
-
-    if (!uploadRes.ok || !uploadData.url) {
-      throw new Error(uploadData.error || 'Erro no upload para o Cloudflare R2');
+    // Fallback garantia total: Base64
+    if (!publicUrl) {
+      const base64Data = buffer.toString('base64');
+      publicUrl = `data:${file.type || 'image/png'};base64,${base64Data}`;
     }
 
     // Gravar na tabela mediaLibrary
     const [media] = await db.insert(mediaLibrary).values({
       filename: file.name,
-      url: uploadData.url,
-      key: uploadData.key || file.name,
+      url: publicUrl,
+      key: filename,
       altText,
       mimeType: file.type,
       fileSize: file.size,
@@ -80,6 +116,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, media });
   } catch (error: any) {
+    console.error('Erro no upload de midia:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
@@ -90,11 +127,8 @@ export async function DELETE(req: Request) {
     const { userId } = auth();
     if (!userId) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 });
 
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.id, userId),
-    });
-
-    if (dbUser?.role !== 'admin') {
+    const isAdmin = await checkAdmin(userId);
+    if (!isAdmin) {
       return NextResponse.json({ error: 'Acesso negado' }, { status: 403 });
     }
 

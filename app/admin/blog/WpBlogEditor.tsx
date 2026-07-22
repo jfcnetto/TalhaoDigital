@@ -6,12 +6,47 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import LinkExtension from "@tiptap/extension-link";
+import { Extension } from "@tiptap/core";
 import { 
   Bold, Italic, List, ListOrdered, Heading1, Heading2, Heading3, 
   Quote, Link as LinkIcon, Image as ImageIcon, Sparkles, Eye, 
-  Save, Globe, ArrowLeft, CheckCircle2, AlertCircle, Loader2, Tag, Code
+  Save, Globe, ArrowLeft, CheckCircle2, AlertCircle, Loader2, Tag, Code,
+  AlignLeft, AlignCenter, AlignRight, AlignJustify, Minus, Table as TableIcon
 } from "lucide-react";
 import MediaLibraryModal from "./MediaLibraryModal";
+
+// Extensão customizada de Alinhamento de Texto NATIVO para Tiptap
+const CustomTextAlign = Extension.create({
+  name: "customTextAlign",
+  addGlobalAttributes() {
+    return [
+      {
+        types: ["heading", "paragraph", "image", "blockquote", "listItem"],
+        attributes: {
+          textAlign: {
+            default: "left",
+            parseHTML: (element) => element.style.textAlign || element.getAttribute("align") || "left",
+            renderHTML: (attributes) => {
+              if (!attributes.textAlign || attributes.textAlign === "left") {
+                return { class: "text-left text-left-override" };
+              }
+              if (attributes.textAlign === "center") {
+                return { class: "text-center text-center-override" };
+              }
+              if (attributes.textAlign === "right") {
+                return { class: "text-right text-right-override" };
+              }
+              if (attributes.textAlign === "justify") {
+                return { class: "text-justify text-justify-override" };
+              }
+              return {};
+            },
+          },
+        },
+      },
+    ];
+  },
+});
 
 interface Category {
   id: number;
@@ -53,11 +88,11 @@ export default function WpBlogEditor({ initialPost, categories, tags }: WpBlogEd
   const [mediaModalOpen, setMediaModalOpen] = useState(false);
   const [mediaTarget, setMediaTarget] = useState<"cover" | "editor">("cover");
 
-  // Modo de Edição: 'visual' (Tiptap) ou 'html' (Código HTML Direto 100% Preservado)
-  const [editorMode, setEditorMode] = useState<"visual" | "html">("visual");
+  // Modo de Edição: 'html' (Código HTML Direto 100% Preservado) ou 'visual' (WYSIWYG)
+  const [editorMode, setEditorMode] = useState<"html" | "visual">("html");
   const [rawHtml, setRawHtml] = useState<string>(initialPost?.contentHtml || "");
 
-  // Tiptap Editor Core
+  // Tiptap Editor Core com Extensões Completas
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -65,16 +100,19 @@ export default function WpBlogEditor({ initialPost, categories, tags }: WpBlogEd
           levels: [1, 2, 3, 4, 5, 6],
         },
       }),
+      CustomTextAlign,
       Image.configure({ allowBase64: true }),
       LinkExtension.configure({ openOnClick: false }),
     ],
-    content: initialPost?.contentHtml || "<p>Comece a escrever o conteúdo técnico do artigo aqui...</p>",
+    content: initialPost?.contentHtml || "<p>Comece a escrever ou cole seu conteúdo técnico aqui...</p>",
     onUpdate: ({ editor }) => {
-      setRawHtml(editor.getHTML());
+      if (editorMode === "visual") {
+        setRawHtml(editor.getHTML());
+      }
     },
   });
 
-  // Atualizar rawHtml sempre que o editor visual for modificado
+  // Sincronizar rawHtml com Tiptap ao mudar no modo visual
   useEffect(() => {
     if (editor && editorMode === "visual") {
       setRawHtml(editor.getHTML());
@@ -96,24 +134,116 @@ export default function WpBlogEditor({ initialPost, categories, tags }: WpBlogEd
     }
   };
 
-  // Funções dos Botões da Toolbar
-  const toggleBold = () => editor?.chain().focus().toggleBold().run();
-  const toggleItalic = () => editor?.chain().focus().toggleItalic().run();
-  const toggleH1 = () => editor?.chain().focus().toggleHeading({ level: 1 }).run();
-  const toggleH2 = () => editor?.chain().focus().toggleHeading({ level: 2 }).run();
-  const toggleH3 = () => editor?.chain().focus().toggleHeading({ level: 3 }).run();
-  const toggleH4 = () => editor?.chain().focus().toggleHeading({ level: 4 }).run();
-  const toggleBulletList = () => editor?.chain().focus().toggleBulletList().run();
-  const toggleOrderedList = () => editor?.chain().focus().toggleOrderedList().run();
-  const toggleBlockquote = () => editor?.chain().focus().toggleBlockquote().run();
+  // Funções dos Botões da Toolbar (com preventDefault para manter foco)
+  const toggleBold = (e: React.MouseEvent) => {
+    e.preventDefault();
+    editor?.chain().focus().toggleBold().run();
+  };
+  const toggleItalic = (e: React.MouseEvent) => {
+    e.preventDefault();
+    editor?.chain().focus().toggleItalic().run();
+  };
+  const toggleH1 = (e: React.MouseEvent) => {
+    e.preventDefault();
+    editor?.chain().focus().toggleHeading({ level: 1 }).run();
+  };
+  const toggleH2 = (e: React.MouseEvent) => {
+    e.preventDefault();
+    editor?.chain().focus().toggleHeading({ level: 2 }).run();
+  };
+  const toggleH3 = (e: React.MouseEvent) => {
+    e.preventDefault();
+    editor?.chain().focus().toggleHeading({ level: 3 }).run();
+  };
+  const toggleH4 = (e: React.MouseEvent) => {
+    e.preventDefault();
+    editor?.chain().focus().toggleHeading({ level: 4 }).run();
+  };
+  const toggleBulletList = (e: React.MouseEvent) => {
+    e.preventDefault();
+    editor?.chain().focus().toggleBulletList().run();
+  };
+  const toggleOrderedList = (e: React.MouseEvent) => {
+    e.preventDefault();
+    editor?.chain().focus().toggleOrderedList().run();
+  };
+  const toggleBlockquote = (e: React.MouseEvent) => {
+    e.preventDefault();
+    editor?.chain().focus().toggleBlockquote().run();
+  };
+  const toggleHr = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (editorMode === "html") {
+      setRawHtml((prev) => prev + "\n<hr />\n");
+    } else if (editor) {
+      editor.chain().focus().setHorizontalRule().run();
+    }
+  };
+
+  // Inserir Link
+  const addLink = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const url = window.prompt("Digite a URL do link (ex: https://talhaodigital.com.br):");
+    if (url) {
+      if (editorMode === "html") {
+        setRawHtml((prev) => prev + ` <a href="${url}" target="_blank" class="text-emerald-800 underline font-bold">${url}</a>`);
+      } else if (editor) {
+        editor.chain().focus().extendMarkRange("link").setLink({ href: url }).run();
+      }
+    }
+  };
+
+  // Inserir Tabela
+  const insertTable = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const tableHtml = `
+<table class="w-full border-collapse border border-neutral-300 my-4 text-xs">
+  <thead>
+    <tr class="bg-neutral-100 border-b border-neutral-300">
+      <th class="p-2 border border-neutral-300 font-bold">Item / Parâmetro</th>
+      <th class="p-2 border border-neutral-300 font-bold">Valor / Descrição</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="p-2 border border-neutral-300">Umidade Padrão</td>
+      <td class="p-2 border border-neutral-300">14,0%</td>
+    </tr>
+  </tbody>
+</table>
+`;
+    setRawHtml((prev) => prev + "\n" + tableHtml);
+    if (editor) {
+      try {
+        editor.chain().focus().insertContent(tableHtml).run();
+      } catch (err) {}
+    }
+  };
+
+  // Aplicação REAL de Alinhamento de Texto
+  const setAlignment = (align: "left" | "center" | "right" | "justify", e: React.MouseEvent) => {
+    e.preventDefault();
+    if (editorMode === "html") {
+      setRawHtml((prev) => `<div class="text-${align} text-${align}-override">\n${prev}\n</div>`);
+    } else if (editor) {
+      editor.chain().focus()
+        .updateAttributes("paragraph", { textAlign: align })
+        .updateAttributes("heading", { textAlign: align })
+        .updateAttributes("image", { textAlign: align })
+        .updateAttributes("blockquote", { textAlign: align })
+        .updateAttributes("listItem", { textAlign: align })
+        .run();
+    }
+  };
 
   // Cálculo de leitura (Seção C)
-  const textContent = editorMode === "html" ? rawHtml.replace(/<[^>]*>?/gm, '') : (editor?.getText() || "");
+  const textContent = rawHtml ? rawHtml.replace(/<[^>]*>?/gm, '') : (editor?.getText() || "");
   const wordCount = textContent.trim() ? textContent.trim().split(/\s+/).length : 0;
   const readingTime = Math.ceil(wordCount / 200);
 
   // Inserir Bloco Customizado de CTA no Editor (Seção C)
-  const insertCtaBlock = () => {
+  const insertCtaBlock = (e: React.MouseEvent) => {
+    e.preventDefault();
     const ctaHtml = `
       <div class="my-6 p-6 rounded-2xl bg-emerald-950 text-white border border-emerald-800 text-center space-y-3">
         <h4 class="text-lg font-bold text-white">🌱 Gostou desse conteúdo técnico?</h4>
@@ -121,22 +251,25 @@ export default function WpBlogEditor({ initialPost, categories, tags }: WpBlogEd
         <a href="/ferramentas/quebra-umidade" class="inline-block bg-white text-emerald-950 font-extrabold text-xs px-4 py-2 rounded-xl">Experimentar Calculadora ➔</a>
       </div>
     `;
-    if (editorMode === "html") {
-      setRawHtml((prev) => prev + "\n" + ctaHtml);
-    } else if (editor) {
-      editor.chain().focus().insertContent(ctaHtml).run();
+    setRawHtml((prev) => prev + "\n" + ctaHtml);
+    if (editor) {
+      try {
+        editor.chain().focus().insertContent(ctaHtml).run();
+      } catch (err) {}
     }
   };
 
-  // Callback de Seleção de Mídia R2
+  // Callback de Seleção de Mídia R2 (Inserção de Imagens no Editor ou Capa)
   const handleSelectMedia = (url: string, altText: string) => {
     if (mediaTarget === "cover") {
       setCoverImage(url);
     } else if (mediaTarget === "editor") {
-      if (editorMode === "html") {
-        setRawHtml((prev) => prev + `\n<img src="${url}" alt="${altText}" />`);
-      } else if (editor) {
-        editor.chain().focus().setImage({ src: url, alt: altText }).run();
+      const imgTag = `\n<p><img src="${url}" alt="${altText}" class="w-full rounded-2xl border border-neutral-200 my-4 shadow-sm" /></p>\n`;
+      setRawHtml((prev) => prev + imgTag);
+      if (editor) {
+        try {
+          editor.chain().focus().setImage({ src: url, alt: altText }).run();
+        } catch (e) {}
       }
     }
   };
@@ -156,8 +289,8 @@ export default function WpBlogEditor({ initialPost, categories, tags }: WpBlogEd
     setSaving(true);
     setErrorMessage(null);
 
-    // Se editado no modo HTML, salva o rawHtml 100% íntegro sem passar por filtros
-    const finalHtml = editorMode === "html" ? rawHtml : (editor?.getHTML() || rawHtml);
+    // Garante salvar o rawHtml 100% íntegro sem sofrer descarte de nenhuma tag
+    const finalHtml = rawHtml || editor?.getHTML() || "";
 
     const payload = {
       id,
@@ -312,13 +445,23 @@ export default function WpBlogEditor({ initialPost, categories, tags }: WpBlogEd
           {/* CONTAINER DO EDITOR (MODO VISUAL & MODO CÓDIGO HTML) */}
           <div className="bg-white border border-neutral-200 rounded-2xl shadow-xs overflow-hidden">
             
-            {/* Header com Alternador de Modo: Visual vs Código HTML */}
+            {/* Header com Alternador de Modo: Código HTML Completo vs Visual */}
             <div className="bg-neutral-100 border-b border-neutral-200 px-4 py-2.5 flex items-center justify-between">
               <div className="flex items-center gap-1.5 bg-neutral-200/80 p-1 rounded-xl">
                 <button
                   type="button"
+                  onClick={() => setEditorMode("html")}
+                  className={`px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
+                    editorMode === "html" ? "bg-white text-emerald-850 shadow-2xs" : "text-neutral-700"
+                  }`}
+                >
+                  &lt;/&gt; Código HTML (100% Preservado)
+                </button>
+
+                <button
+                  type="button"
                   onClick={() => {
-                    if (editorMode === "html" && editor && rawHtml) {
+                    if (editor && rawHtml) {
                       try {
                         editor.commands.setContent(rawHtml);
                       } catch (e) {}
@@ -329,38 +472,140 @@ export default function WpBlogEditor({ initialPost, categories, tags }: WpBlogEd
                     editorMode === "visual" ? "bg-white text-emerald-850 shadow-2xs" : "text-neutral-600 hover:text-neutral-900"
                   }`}
                 >
-                  👁️ Editor Visual
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (editorMode === "visual" && editor) {
-                      setRawHtml(editor.getHTML());
-                    }
-                    setEditorMode("html");
-                  }}
-                  className={`px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all cursor-pointer ${
-                    editorMode === "html" ? "bg-white text-emerald-850 shadow-2xs" : "text-neutral-700"
-                  }`}
-                >
-                  &lt;/&gt; Código HTML Completo
+                  👁️ Editor Visual (WYSIWYG)
                 </button>
               </div>
 
               <span className="text-[11px] text-neutral-500 font-bold hidden sm:inline">
-                {editorMode === "visual" ? "Modo de Edição Visual" : "Modo de Inserção Direta de Código HTML"}
+                {editorMode === "html" ? "Cole seu código HTML com 100% de preservação de tags" : "Modo de Edição Visual"}
               </span>
             </div>
 
-            {/* MODO 1: EDITOR VISUAL (TIPTAP) */}
+            {/* MODO 1: EDITOR CÓDIGO HTML DIRETO (100% PRESERVADO E RENDERIZADO) */}
+            {editorMode === "html" && (
+              <div className="p-6 space-y-6 bg-neutral-900 text-emerald-400">
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-neutral-300 font-bold border-b border-neutral-800 pb-2">
+                    <span>Cole ou edite seu código HTML abaixo:</span>
+
+                    {/* Ferramentas Rápidas no Modo HTML */}
+                    <div className="flex flex-wrap items-center gap-1.5 bg-neutral-950 p-1.5 rounded-xl border border-neutral-800">
+                      <span className="text-[10px] text-neutral-400 px-1">Alinhar:</span>
+                      <button
+                        type="button"
+                        onMouseDown={(e) => setAlignment("left", e)}
+                        className="p-1.5 rounded bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold cursor-pointer"
+                        title="Alinhar à Esquerda"
+                      >
+                        <AlignLeft className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onMouseDown={(e) => setAlignment("center", e)}
+                        className="p-1.5 rounded bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold cursor-pointer"
+                        title="Centralizar"
+                      >
+                        <AlignCenter className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onMouseDown={(e) => setAlignment("right", e)}
+                        className="p-1.5 rounded bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold cursor-pointer"
+                        title="Alinhar à Direita"
+                      >
+                        <AlignRight className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onMouseDown={(e) => setAlignment("justify", e)}
+                        className="p-1.5 rounded bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold cursor-pointer"
+                        title="Justificar"
+                      >
+                        <AlignJustify className="h-3.5 w-3.5" />
+                      </button>
+                      
+                      <div className="h-3 w-px bg-neutral-800 mx-1" />
+
+                      <button
+                        type="button"
+                        onMouseDown={addLink}
+                        className="p-1.5 rounded bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold cursor-pointer"
+                        title="Inserir Link"
+                      >
+                        <LinkIcon className="h-3.5 w-3.5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onMouseDown={toggleHr}
+                        className="p-1.5 rounded bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold cursor-pointer"
+                        title="Linha Divisória <hr>"
+                      >
+                        <Minus className="h-3.5 w-3.5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onMouseDown={insertTable}
+                        className="p-1.5 rounded bg-neutral-800 hover:bg-neutral-700 text-white text-xs font-bold cursor-pointer"
+                        title="Inserir Tabela"
+                      >
+                        <TableIcon className="h-3.5 w-3.5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMediaTarget("editor");
+                          setMediaModalOpen(true);
+                        }}
+                        className="p-1.5 rounded bg-emerald-800 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1 cursor-pointer"
+                        title="Inserir Imagem do R2"
+                      >
+                        <ImageIcon className="h-3.5 w-3.5" />
+                        <span className="text-[10px]">Imagens</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <textarea
+                    rows={18}
+                    value={rawHtml}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setRawHtml(val);
+                      if (editor) {
+                        try {
+                          editor.commands.setContent(val);
+                        } catch (err) {}
+                      }
+                    }}
+                    placeholder="Cole seu código HTML completo aqui..."
+                    className="w-full bg-neutral-950 text-neutral-100 border border-neutral-800 rounded-xl p-4 focus:outline-none focus:border-emerald-500 font-mono text-xs leading-relaxed shadow-inner"
+                  />
+                </div>
+
+                {/* PRÉ-VISUALIZAÇÃO EM TEMPO REAL DO HTML RENDERIZADO */}
+                <div className="space-y-2 bg-white text-neutral-900 rounded-2xl p-6 border border-neutral-300 shadow-md">
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-800 border-b pb-2 block">
+                    👁️ Pré-visualização do Artigo HTML Renderizado na Tela:
+                  </span>
+                  <div 
+                    className="prose prose-emerald max-w-none text-sm leading-relaxed"
+                    dangerouslySetInnerHTML={{ __html: rawHtml || "<p class='text-neutral-400 italic'>O resultado renderizado do seu código HTML aparecerá aqui...</p>" }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* MODO 2: EDITOR VISUAL (TIPTAP COM FERRAMENTAS COMPLETAS) */}
             {editorMode === "visual" && (
               <>
-                {/* Toolbar do Editor Visual com Botões Funcionais */}
+                {/* Toolbar com preventDefault em todos os botões */}
                 <div className="bg-neutral-50 border-b border-neutral-200 p-2 flex flex-wrap items-center gap-1.5">
                   <button
                     type="button"
-                    onClick={toggleBold}
+                    onMouseDown={toggleBold}
                     className={`p-2 rounded-lg text-xs font-bold transition-colors ${editor?.isActive("bold") ? "bg-white shadow text-emerald-800" : "text-neutral-600 hover:bg-neutral-200"}`}
                     title="Negrito"
                   >
@@ -368,7 +613,7 @@ export default function WpBlogEditor({ initialPost, categories, tags }: WpBlogEd
                   </button>
                   <button
                     type="button"
-                    onClick={toggleItalic}
+                    onMouseDown={toggleItalic}
                     className={`p-2 rounded-lg text-xs font-bold transition-colors ${editor?.isActive("italic") ? "bg-white shadow text-emerald-800" : "text-neutral-600 hover:bg-neutral-200"}`}
                     title="Itálico"
                   >
@@ -377,37 +622,35 @@ export default function WpBlogEditor({ initialPost, categories, tags }: WpBlogEd
 
                   <div className="h-4 w-px bg-neutral-300 mx-1" />
 
+                  {/* Títulos H1, H2, H3, H4 */}
                   <button
                     type="button"
-                    onClick={toggleH1}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-extrabold transition-colors ${editor?.isActive("heading", { level: 1 }) ? "bg-white shadow text-emerald-800" : "text-neutral-600 hover:bg-neutral-200"}`}
+                    onMouseDown={toggleH1}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-extrabold transition-colors ${editor?.isActive("heading", { level: 1 }) ? "bg-emerald-800 text-white shadow" : "text-neutral-600 hover:bg-neutral-200"}`}
                     title="Título H1"
                   >
                     H1
                   </button>
-
                   <button
                     type="button"
-                    onClick={toggleH2}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-extrabold transition-colors ${editor?.isActive("heading", { level: 2 }) ? "bg-white shadow text-emerald-800" : "text-neutral-600 hover:bg-neutral-200"}`}
+                    onMouseDown={toggleH2}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-extrabold transition-colors ${editor?.isActive("heading", { level: 2 }) ? "bg-emerald-800 text-white shadow" : "text-neutral-600 hover:bg-neutral-200"}`}
                     title="Título H2"
                   >
                     H2
                   </button>
-
                   <button
                     type="button"
-                    onClick={toggleH3}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-extrabold transition-colors ${editor?.isActive("heading", { level: 3 }) ? "bg-white shadow text-emerald-800" : "text-neutral-600 hover:bg-neutral-200"}`}
+                    onMouseDown={toggleH3}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-extrabold transition-colors ${editor?.isActive("heading", { level: 3 }) ? "bg-emerald-800 text-white shadow" : "text-neutral-600 hover:bg-neutral-200"}`}
                     title="Título H3"
                   >
                     H3
                   </button>
-
                   <button
                     type="button"
-                    onClick={toggleH4}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-extrabold transition-colors ${editor?.isActive("heading", { level: 4 }) ? "bg-white shadow text-emerald-800" : "text-neutral-600 hover:bg-neutral-200"}`}
+                    onMouseDown={toggleH4}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-extrabold transition-colors ${editor?.isActive("heading", { level: 4 }) ? "bg-emerald-800 text-white shadow" : "text-neutral-600 hover:bg-neutral-200"}`}
                     title="Título H4"
                   >
                     H4
@@ -415,31 +658,89 @@ export default function WpBlogEditor({ initialPost, categories, tags }: WpBlogEd
 
                   <div className="h-4 w-px bg-neutral-300 mx-1" />
 
+                  {/* Ferramentas de Alinhamento de Texto NATIVAS */}
                   <button
                     type="button"
-                    onClick={toggleBulletList}
+                    onMouseDown={(e) => setAlignment("left", e)}
+                    className="p-2 rounded-lg text-xs font-bold text-neutral-600 hover:bg-neutral-200"
+                    title="Alinhar à Esquerda"
+                  >
+                    <AlignLeft className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => setAlignment("center", e)}
+                    className="p-2 rounded-lg text-xs font-bold text-neutral-600 hover:bg-neutral-200"
+                    title="Centralizar"
+                  >
+                    <AlignCenter className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => setAlignment("right", e)}
+                    className="p-2 rounded-lg text-xs font-bold text-neutral-600 hover:bg-neutral-200"
+                    title="Alinhar à Direita"
+                  >
+                    <AlignRight className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={(e) => setAlignment("justify", e)}
+                    className="p-2 rounded-lg text-xs font-bold text-neutral-600 hover:bg-neutral-200"
+                    title="Justificado"
+                  >
+                    <AlignJustify className="h-4 w-4" />
+                  </button>
+
+                  <div className="h-4 w-px bg-neutral-300 mx-1" />
+
+                  <button
+                    type="button"
+                    onMouseDown={toggleBulletList}
                     className={`p-2 rounded-lg text-xs font-bold transition-colors ${editor?.isActive("bulletList") ? "bg-white shadow text-emerald-800" : "text-neutral-600 hover:bg-neutral-200"}`}
                     title="Lista de Marcadores"
                   >
                     <List className="h-4 w-4" />
                   </button>
-
                   <button
                     type="button"
-                    onClick={toggleOrderedList}
+                    onMouseDown={toggleOrderedList}
                     className={`p-2 rounded-lg text-xs font-bold transition-colors ${editor?.isActive("orderedList") ? "bg-white shadow text-emerald-800" : "text-neutral-600 hover:bg-neutral-200"}`}
                     title="Lista Numerada"
                   >
                     <ListOrdered className="h-4 w-4" />
                   </button>
-
                   <button
                     type="button"
-                    onClick={toggleBlockquote}
+                    onMouseDown={toggleBlockquote}
                     className={`p-2 rounded-lg text-xs font-bold transition-colors ${editor?.isActive("blockquote") ? "bg-white shadow text-emerald-800" : "text-neutral-600 hover:bg-neutral-200"}`}
                     title="Citação"
                   >
                     <Quote className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={addLink}
+                    className="p-2 rounded-lg text-xs font-bold text-neutral-600 hover:bg-neutral-200"
+                    title="Inserir Link"
+                  >
+                    <LinkIcon className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={toggleHr}
+                    className="p-2 rounded-lg text-xs font-bold text-neutral-600 hover:bg-neutral-200"
+                    title="Linha Divisória <hr>"
+                  >
+                    <Minus className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onMouseDown={insertTable}
+                    className="p-2 rounded-lg text-xs font-bold text-neutral-600 hover:bg-neutral-200"
+                    title="Inserir Tabela"
+                  >
+                    <TableIcon className="h-4 w-4" />
                   </button>
 
                   <div className="h-4 w-px bg-neutral-300 mx-1" />
@@ -461,7 +762,7 @@ export default function WpBlogEditor({ initialPost, categories, tags }: WpBlogEd
                   {/* Botão Customizado de Embed de CTA (Seção C) */}
                   <button
                     type="button"
-                    onClick={insertCtaBlock}
+                    onMouseDown={insertCtaBlock}
                     className="p-2 rounded-lg text-xs font-bold bg-emerald-800 text-white hover:bg-emerald-900 flex items-center gap-1 ml-auto shadow-2xs cursor-pointer"
                     title="Inserir Chamada para Calculadora"
                   >
@@ -475,37 +776,6 @@ export default function WpBlogEditor({ initialPost, categories, tags }: WpBlogEd
                   <EditorContent editor={editor} />
                 </div>
               </>
-            )}
-
-            {/* MODO 2: EDITOR CÓDIGO HTML DIRETO (100% PRESERVADO E RENDERIZADO) */}
-            {editorMode === "html" && (
-              <div className="p-6 space-y-6 bg-neutral-900 text-emerald-400">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs text-neutral-300 font-bold border-b border-neutral-800 pb-2">
-                    <span>Cole seu código HTML completo abaixo:</span>
-                    <span className="text-emerald-400 text-[11px]">100% de preservação de tags (article, section, header, h1, etc.)</span>
-                  </div>
-
-                  <textarea
-                    rows={18}
-                    value={rawHtml}
-                    onChange={(e) => setRawHtml(e.target.value)}
-                    placeholder="Cole seu código HTML completo aqui..."
-                    className="w-full bg-neutral-950 text-neutral-100 border border-neutral-800 rounded-xl p-4 focus:outline-none focus:border-emerald-500 font-mono text-xs leading-relaxed shadow-inner"
-                  />
-                </div>
-
-                {/* PRÉ-VISUALIZAÇÃO EM TEMPO REAL DO HTML RENDERIZADO */}
-                <div className="space-y-2 bg-white text-neutral-900 rounded-2xl p-6 border border-neutral-300 shadow-md">
-                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-800 border-b pb-2 block">
-                    👁️ Pré-visualização do Artigo HTML Renderizado:
-                  </span>
-                  <div 
-                    className="prose prose-emerald max-w-none text-sm leading-relaxed"
-                    dangerouslySetInnerHTML={{ __html: rawHtml || "<p class='text-neutral-400 italic'>O resultado renderizado do seu código HTML aparecerá aqui...</p>" }}
-                  />
-                </div>
-              </div>
             )}
 
           </div>

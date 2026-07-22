@@ -3,7 +3,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { db } from '@/db';
 import { blogPosts, blogCategories } from '@/db/schema';
-import { eq, desc, like, or } from 'drizzle-orm';
+import { eq, desc, like, or, and } from 'drizzle-orm';
 import Link from 'next/link';
 import { Calendar, User, Search, Tag, ArrowRight, BookOpen } from 'lucide-react';
 import AdSenseBanner from '@/components/AdSenseBanner';
@@ -27,14 +27,20 @@ export default async function BlogIndexPage({ searchParams }: BlogIndexPageProps
   let posts;
   if (categoryFilter && categoryFilter !== 'todos') {
     posts = await db.query.blogPosts.findMany({
-      where: eq(blogPosts.category, categoryFilter as any),
+      where: and(
+        eq(blogPosts.category, categoryFilter as any),
+        eq(blogPosts.status, 'published')
+      ),
       orderBy: desc(blogPosts.publishedAt),
     });
   } else if (searchQuery) {
     posts = await db.query.blogPosts.findMany({
-      where: or(
-        like(blogPosts.title, `%${searchQuery}%`),
-        like(blogPosts.summary, `%${searchQuery}%`)
+      where: and(
+        or(
+          like(blogPosts.title, `%${searchQuery}%`),
+          like(blogPosts.summary, `%${searchQuery}%`)
+        ),
+        eq(blogPosts.status, 'published')
       ),
       orderBy: desc(blogPosts.publishedAt),
     });

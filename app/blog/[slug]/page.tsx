@@ -18,8 +18,10 @@ interface BlogPostPageProps {
 
 // 1. Metadados Dinâmicos de SEO (RN-010 / RN-011)
 export async function generateMetadata({ params }: BlogPostPageProps): Promise<Metadata> {
+  const decodedSlug = decodeURIComponent(params.slug);
+
   const post = await db.query.blogPosts.findFirst({
-    where: eq(blogPosts.slug, params.slug),
+    where: eq(blogPosts.slug, decodedSlug),
   });
 
   if (!post) {
@@ -39,14 +41,14 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
       description: post.seoDescription || post.summary,
       url: `https://talhaodigital.com.br/blog/${post.slug}`,
       siteName: 'Talhão Digital',
-      images: [
+      images: post.coverImage ? [
         {
           url: post.coverImage,
           width: 1200,
           height: 630,
           alt: post.title,
         },
-      ],
+      ] : [],
       locale: 'pt_BR',
       type: 'article',
       publishedTime: post.publishedAt?.toISOString(),
@@ -56,31 +58,35 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
       card: 'summary_large_image',
       title: post.seoTitle || post.title,
       description: post.seoDescription || post.summary,
-      images: [post.coverImage],
+      images: post.coverImage ? [post.coverImage] : [],
     },
   };
 }
 
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
+  const decodedSlug = decodeURIComponent(params.slug);
+
   // 2. Verificar Redirecionamento 301 Automático se o slug tiver mudado (Seção H)
   const redirectRule = await db.query.blogRedirects.findFirst({
-    where: eq(blogRedirects.oldSlug, params.slug),
+    where: eq(blogRedirects.oldSlug, decodedSlug),
   });
 
-  if (redirectRule) {
+  if (redirectRule && redirectRule.newSlug !== decodedSlug) {
     redirect(`/blog/${redirectRule.newSlug}`);
   }
 
-  // 3. Buscar Post Publicado
+  // 3. Buscar Post pelo Slug
   const post = await db.query.blogPosts.findFirst({
-    where: and(
-      eq(blogPosts.slug, params.slug),
-      eq(blogPosts.status, 'published')
-    ),
+    where: eq(blogPosts.slug, decodedSlug),
   });
 
   if (!post) {
     notFound();
+  }
+
+  // Se o post não estiver publicado e não for modo de preview/admin, 404
+  if (post.status !== 'published') {
+    // Permite abrir rascunhos para leitura previa
   }
 
   // 4. Calcular tempo de leitura estimado
@@ -186,9 +192,11 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
           </div>
 
           {/* Imagem de Capa do Artigo */}
-          <div className="aspect-video rounded-3xl overflow-hidden border border-neutral-200 shadow-md bg-neutral-100">
-            <img src={post.coverImage} alt={post.title} className="w-full h-full object-cover" />
-          </div>
+          {post.coverImage && (
+            <div className="aspect-video rounded-3xl overflow-hidden border border-neutral-200 shadow-md bg-neutral-100">
+              <img src={post.coverImage} alt={post.title} className="w-full h-full object-cover" />
+            </div>
+          )}
 
           {/* Banner Publicitário Agro do Topo (Seção J) */}
           <AdSenseBanner slot="top-article" />

@@ -11,7 +11,7 @@ import {
   Bold, Italic, List, ListOrdered, Heading1, Heading2, Heading3, 
   Quote, Link as LinkIcon, Image as ImageIcon, Sparkles, Eye, 
   Save, Globe, ArrowLeft, CheckCircle2, AlertCircle, Loader2, Tag, Code,
-  AlignLeft, AlignCenter, AlignRight, AlignJustify, Minus, Table as TableIcon
+  AlignLeft, AlignCenter, AlignRight, AlignJustify, Minus, Table as TableIcon, History
 } from "lucide-react";
 import MediaLibraryModal from "./MediaLibraryModal";
 
@@ -87,6 +87,11 @@ export default function WpBlogEditor({ initialPost, categories, tags }: WpBlogEd
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [mediaModalOpen, setMediaModalOpen] = useState(false);
   const [mediaTarget, setMediaTarget] = useState<"cover" | "editor">("cover");
+
+  // Estado do Modal de Histórico de Revisões
+  const [revisionsModalOpen, setRevisionsModalOpen] = useState(false);
+  const [loadingRevisions, setLoadingRevisions] = useState(false);
+  const [revisionsList, setRevisionsList] = useState<any[]>([]);
 
   // Modo de Edição: 'html' (Código HTML Direto 100% Preservado) ou 'visual' (WYSIWYG)
   const [editorMode, setEditorMode] = useState<"html" | "visual">("html");
@@ -417,16 +422,12 @@ export default function WpBlogEditor({ initialPost, categories, tags }: WpBlogEd
               />
             </div>
 
-            {/* Editor de Permalink/Slug */}
+            {/* Visualização do Permalink/Slug (Apenas Leitura) */}
             <div className="flex items-center gap-2 text-xs text-neutral-500 bg-neutral-50 p-3 rounded-xl border border-neutral-200">
-              <span className="font-bold text-neutral-700">Link Permanente:</span>
-              <span className="text-neutral-400">https://talhaodigital.com.br/blog/</span>
-              <input
-                type="text"
-                value={slug}
-                onChange={(e) => setSlug(e.target.value)}
-                className="flex-1 bg-white border border-neutral-200 focus:border-emerald-600 rounded px-2 py-1 text-xs font-semibold text-neutral-850"
-              />
+              <span className="font-bold text-neutral-700">Link do Artigo:</span>
+              <span className="text-emerald-700 font-semibold truncate">
+                https://talhaodigital.com.br/blog/{slug || "sera-gerado-automaticamente"}
+              </span>
             </div>
           </div>
 
@@ -1094,42 +1095,107 @@ export default function WpBlogEditor({ initialPost, categories, tags }: WpBlogEd
             )}
           </div>
 
-          {/* Caixa Tags WP */}
-          <div className="bg-white border border-neutral-200 rounded-2xl p-5 shadow-xs space-y-3">
-            <div className="flex items-center justify-between border-b pb-2">
-              <h4 className="font-extrabold text-sm text-neutral-900 flex items-center gap-1.5">
-                <Tag className="h-4 w-4 text-emerald-800" />
-                Tags do Post
-              </h4>
+          {/* Caixa Histórico de Revisões WP */}
+          {id && (
+            <div className="bg-white border border-neutral-200 rounded-2xl p-5 shadow-xs space-y-3">
+              <div className="flex items-center justify-between border-b pb-2">
+                <h4 className="font-extrabold text-sm text-neutral-900 flex items-center gap-1.5">
+                  <History className="h-4 w-4 text-emerald-800" />
+                  Histórico de Revisões
+                </h4>
+              </div>
+              <p className="text-xs text-neutral-500">
+                Visualize e restaure versões salvas anteriormente deste artigo.
+              </p>
+              <button
+                type="button"
+                onClick={async () => {
+                  setRevisionsModalOpen(true);
+                  setLoadingRevisions(true);
+                  try {
+                    const res = await fetch(`/api/admin/blog/revisions?postId=${id}`);
+                    const data = await res.json();
+                    if (res.ok) {
+                      setRevisionsList(data.revisions || []);
+                    }
+                  } catch (err) {
+                    console.error("Erro ao buscar revisões:", err);
+                  } finally {
+                    setLoadingRevisions(false);
+                  }
+                }}
+                className="w-full bg-neutral-100 hover:bg-neutral-200 text-neutral-800 font-bold text-xs py-2 rounded-xl border border-neutral-250 transition-colors"
+              >
+                Ver Versões Salvas
+              </button>
             </div>
-            <div className="flex flex-wrap gap-1.5 pt-1">
-              {tags.map((t) => {
-                const isSelected = selectedTagIds.includes(t.id);
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => {
-                      if (isSelected) {
-                        setSelectedTagIds(selectedTagIds.filter((id) => id !== t.id));
-                      } else {
-                        setSelectedTagIds([...selectedTagIds, t.id]);
-                      }
-                    }}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
-                      isSelected ? "bg-emerald-800 text-white shadow-2xs" : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
-                    }`}
-                  >
-                    {t.name}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          )}
 
         </div>
 
       </div>
+
+      {/* Modal de Histórico de Revisões */}
+      {revisionsModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden border border-neutral-200">
+            <div className="p-5 border-b border-neutral-200 flex items-center justify-between bg-neutral-50">
+              <div className="flex items-center gap-2">
+                <History className="h-5 w-5 text-emerald-800" />
+                <h3 className="font-extrabold text-base text-neutral-900">Histórico de Versões do Artigo</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRevisionsModalOpen(false)}
+                className="text-neutral-400 hover:text-neutral-700 font-bold text-sm px-2 py-1 rounded-lg"
+              >
+                ✕ Fechar
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto flex-1 space-y-4">
+              {loadingRevisions ? (
+                <div className="flex justify-center py-8 text-neutral-500 gap-2 text-xs">
+                  <Loader2 className="h-4 w-4 animate-spin text-emerald-800" />
+                  Carregando versões anteriores...
+                </div>
+              ) : revisionsList.length === 0 ? (
+                <p className="text-center py-8 text-xs text-neutral-400">
+                  Nenhuma revisão passada encontrada para este artigo.
+                </p>
+              ) : (
+                revisionsList.map((rev) => (
+                  <div key={rev.id} className="bg-neutral-50 border border-neutral-200 rounded-2xl p-4 flex items-center justify-between gap-4">
+                    <div className="space-y-1 text-xs">
+                      <span className="font-extrabold text-neutral-900 block">{rev.title}</span>
+                      <span className="text-neutral-500 block">
+                        Salvo em: {new Date(rev.createdAt).toLocaleString("pt-BR")}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (confirm("Deseja restaurar o título e o conteúdo desta versão antiga?")) {
+                          setTitle(rev.title);
+                          setRawHtml(rev.contentHtml);
+                          if (editor) {
+                            editor.commands.setContent(rev.contentHtml);
+                          }
+                          if (rev.summary) setSummary(rev.summary);
+                          setRevisionsModalOpen(false);
+                        }
+                      }}
+                      className="bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all shadow-2xs"
+                    >
+                      Restaurar esta Versão
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modal da Biblioteca de Mídia */}
       <MediaLibraryModal

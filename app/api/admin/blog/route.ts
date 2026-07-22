@@ -62,7 +62,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const {
+    let {
       title,
       slug,
       summary,
@@ -78,6 +78,9 @@ export async function POST(req: Request) {
       status,
       tagIds,
     } = body;
+
+    // Higienização de segurança do slug
+    slug = slug ? slug.trim().toLowerCase().replace(/\s+/g, '-') : slug;
 
     // Verificar colisão de slug
     const existingSlug = await db.query.blogPosts.findFirst({
@@ -143,7 +146,10 @@ export async function PUT(req: Request) {
     }
 
     const body = await req.json();
-    const { id, title, slug, summary, contentHtml, contentJson, coverImage, seoTitle, seoDescription, focusKeyword, canonicalUrl, categoryId, category, status, tagIds } = body;
+    let { id, title, slug, summary, contentHtml, contentJson, coverImage, seoTitle, seoDescription, focusKeyword, canonicalUrl, categoryId, category, status, tagIds } = body;
+
+    // Higienização de segurança do slug
+    slug = slug ? slug.trim().toLowerCase().replace(/\s+/g, '-') : slug;
 
     const currentPost = await db.query.blogPosts.findFirst({
       where: eq(blogPosts.id, id),
@@ -155,6 +161,15 @@ export async function PUT(req: Request) {
 
     // Se o slug mudou, salvar regra de 301 Redirect automático
     if (currentPost.slug !== slug) {
+      // 1. Deletar possível regra reversa para evitar loop infinito (A -> B e B -> A)
+      await db.delete(blogRedirects).where(
+        and(
+          eq(blogRedirects.oldSlug, slug),
+          eq(blogRedirects.newSlug, currentPost.slug)
+        )
+      );
+
+      // 2. Inserir a nova regra (Antigo -> Novo)
       await db.insert(blogRedirects).values({
         oldSlug: currentPost.slug,
         newSlug: slug,

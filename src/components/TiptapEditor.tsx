@@ -4,7 +4,7 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
-import { Bold, Italic, Heading1, Heading2, List, ListOrdered, Link2, Image2, Undo, Redo, Code } from "lucide-react";
+import { Bold, Italic, Heading1, Heading2, List, ListOrdered, Link2, Image as ImageIcon, Undo, Redo, Code, Loader2 } from "lucide-react";
 import { useState } from "react";
 
 interface TiptapEditorProps {
@@ -171,7 +171,7 @@ export default function TiptapEditor({ content, onChange }: TiptapEditorProps) {
           {uploading ? (
             <Loader2 className="h-4 w-4 animate-spin text-emerald-850" />
           ) : (
-            <Image2 className="h-4 w-4" />
+            <ImageIcon className="h-4 w-4" />
           )}
         </button>
 

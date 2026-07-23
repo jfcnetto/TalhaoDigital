@@ -36,8 +36,10 @@ export default async function QuebraUmidadePage() {
   const { userId } = auth();
   const user = await currentUser();
   let isPro = false;
+  let userName = "Usuário";
 
   if (userId && user) {
+    userName = user.firstName ? `${user.firstName} ${user.lastName || ""}` : "Usuário";
     const dbUser = await db.query.users.findFirst({
       where: eq(users.id, userId),
     });
@@ -57,5 +59,5 @@ export default async function QuebraUmidadePage() {
     }
   }
 
-  return <QuebraUmidadeClient isPro={isPro} />;
+  return <QuebraUmidadeClient isPro={isPro} userName={userName} />;
 }

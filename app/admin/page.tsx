@@ -85,14 +85,12 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
           status: stripeSub.status,
           currentPeriodStart: new Date(stripeSub.current_period_start * 1000),
           currentPeriodEnd: new Date(stripeSub.current_period_end * 1000),
-          cancelAtPeriodEnd: stripeSub.cancel_at_period_end,
         }).onConflictDoUpdate({
           target: subscriptions.id,
           set: {
             status: stripeSub.status,
             currentPeriodStart: new Date(stripeSub.current_period_start * 1000),
             currentPeriodEnd: new Date(stripeSub.current_period_end * 1000),
-            cancelAtPeriodEnd: stripeSub.cancel_at_period_end,
           }
         });
       }
@@ -192,9 +190,6 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     });
     const allSubs = await db.query.subscriptions.findMany();
     const dbPlans = await db.query.plans.findMany();
-    const allPosts = await db.query.blogPosts.findMany({
-      orderBy: desc(blogPosts.createdAt),
-    });
 
     return (
       <div className="min-h-screen bg-neutral-50 text-neutral-900 flex flex-col selection:bg-emerald-200">
@@ -213,7 +208,6 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               initialUsers={allUsers}
               subscriptions={allSubs}
               plans={dbPlans}
-              initialPosts={allPosts}
             />
           </div>
         </main>
@@ -259,6 +253,14 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
               <p className="text-neutral-500 text-sm mt-1">
                 Olá, {user.firstName || 'Agrônomo'}! Gerencie seus laudos emitidos e vigência da sua assinatura.
               </p>
+            </div>
+          </div>
+
+          <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 flex gap-3 text-sm text-emerald-800">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-info shrink-0 h-5 w-5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+            <div>
+              <strong className="font-semibold block mb-1">Dica para uso na Roça (Modo Offline)</strong>
+              Para usar nossas calculadoras em áreas sem internet, certifique-se de <strong>fazer login no aplicativo pelo menos uma vez enquanto estiver conectado ao Wi-Fi ou 4G</strong>. Sua sessão ficará salva no aparelho e, quando a internet voltar, seus laudos serão sincronizados automaticamente!
             </div>
           </div>
 

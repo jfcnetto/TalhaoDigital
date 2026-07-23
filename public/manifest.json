@@ -1,0 +1,21 @@
+{
+  "name": "Talhão Digital",
+  "short_name": "Talhão Digital",
+  "description": "Laudos e Diagnósticos Agronômicos de Precisão",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#064e3b",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

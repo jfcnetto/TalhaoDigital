@@ -150,13 +150,32 @@ export default function DashboardClient({ isPro, proType, plans, reports, subscr
               <FileText className="h-5 w-5 text-emerald-800" />
               Meus Laudos & Histórico
             </h2>
-            <Link 
-              href="/ferramentas/quebra-umidade"
-              className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group"
-            >
-              Novo Cálculo
-              <ArrowRight className="h-3 w-3 group-hover:translate-x-0.5 transition-transform" />
-            </Link>
+             <div className="flex items-center gap-3">
+              <Link 
+                href="/ferramentas/calagem-gessagem"
+                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
+              >
+                + Calagem
+              </Link>
+              <Link 
+                href="/ferramentas/balanceador-npk"
+                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
+              >
+                + NPK
+              </Link>
+              <Link 
+                href="/ferramentas/quebra-umidade"
+                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
+              >
+                + Umidade
+              </Link>
+              <Link 
+                href="/ferramentas/calibrador-bicos"
+                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
+              >
+                + Bicos
+              </Link>
+            </div>
           </div>
 
           {reports.length > 0 ? (

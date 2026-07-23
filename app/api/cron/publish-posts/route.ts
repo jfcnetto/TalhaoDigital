@@ -3,6 +3,8 @@ import { db } from '@/db';
 import { blogPosts } from '@/db/schema';
 import { eq, and, lte } from 'drizzle-orm';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);

@@ -1,13 +1,15 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Calculator, FileText, Info, HelpCircle, Printer } from "lucide-react";
+
+import Link from "next/link";
+import { Calculator, FileText, Info, HelpCircle, Printer, ArrowLeft, Lock, Download } from "lucide-react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
-export default function QuebraUmidadeClient({ isPro = false }: { isPro?: boolean }) {
+export default function QuebraUmidadeClient({ isPro = false, userName }: { isPro?: boolean, userName?: string }) {
   // Inputs
   const [pesoInicial, setPesoInicial] = useState<number>(30000);
   const [umidadeInicial, setUmidadeInicial] = useState<number>(18);
@@ -18,7 +20,7 @@ export default function QuebraUmidadeClient({ isPro = false }: { isPro?: boolean
 
   // Laudo Técnico (Obrigatórios)
   const [produtor, setProdutor] = useState<string>("");
-  const [responsavelTecnico, setResponsavelTecnico] = useState<string>("");
+  const [responsavelTecnico, setResponsavelTecnico] = useState<string>(userName || "");
   const [showValidationError, setShowValidationError] = useState<boolean>(false);
 
   const reportRef = useRef<HTMLDivElement>(null);
@@ -128,71 +130,82 @@ export default function QuebraUmidadeClient({ isPro = false }: { isPro?: boolean
   };
 
   return (
-    <div 
-      className={`min-h-screen bg-neutral-50 text-neutral-900 flex flex-col selection:bg-emerald-200 ${!isPro ? "select-none" : ""}`}
-      onContextMenu={(e) => {
-        if (!isPro) {
-          e.preventDefault();
-        }
-      }}
-    >
-      {/* CSS para Impressão limpa ou Bloqueio de Impressão */}
-      <style>{`
-        @media print {
-          ${!isPro ? `
-            html, body {
-              display: none !important;
-              visibility: hidden !important;
-            }
-          ` : `
-            body {
-              background: white !important;
-              color: black !important;
-            }
-            header, footer, nav, button, input, .no-print, main {
-              display: none !important;
-            }
-            .print-only-container {
-              position: static !important;
-              left: 0 !important;
-              top: 0 !important;
-              width: 100% !important;
-              display: block !important;
-            }
-          `}
-        }
-      `}</style>
-
-      {/* Header Unificado */}
+    <div className={`min-h-screen bg-neutral-50/50 flex flex-col ${!isPro ? "select-none" : ""}`} onContextMenu={(e) => !isPro && e.preventDefault()}>
       <div className="no-print">
         <Header />
       </div>
 
-      {/* Main Content */}
-      <main className="flex-1 container mx-auto max-w-7xl px-4 py-8 lg:py-12 no-print">
-        <div className="max-w-4xl mx-auto space-y-8">
-          
-          {/* Título & Descrição */}
-          <div className="space-y-3">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 text-xs font-semibold">
-              <Calculator className="h-3.5 w-3.5" />
-              Grãos e Armazenagem
-            </div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-neutral-900 sm:text-4xl">
+      {/* Container Principal */}
+      <div className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 w-full">
+        
+        {/* Cabeçalho de Navegação e Título */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <Link href="/dashboard" className="inline-flex items-center text-sm font-medium text-neutral-500 hover:text-neutral-900 mb-2 transition-colors">
+              <ArrowLeft className="w-4 h-4 mr-1" />
+              Voltar ao Dashboard
+            </Link>
+            <h1 className="text-2xl font-bold text-neutral-900 tracking-tight">
               Simulador de Quebra de Umidade
             </h1>
-            <p className="text-neutral-600 max-w-2xl text-sm sm:text-base leading-relaxed">
-              Calcule instantaneamente a perda de peso por secagem de água e excesso de impurezas.
-              <br className="hidden sm:inline" />
-              Compare com a folha de desconto da cooperativa ou cerealista.
+            <p className="text-neutral-500 text-sm mt-1">
+              Calcule a perda de peso por secagem de água e excesso de impurezas.
             </p>
           </div>
+          
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            {isPro ? (
+              <>
+                <button
+                  onClick={handlePrint}
+                  disabled={!isFormValid}
+                  className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-white border border-neutral-200 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Printer className="w-4 h-4 mr-2" />
+                  Imprimir
+                </button>
+                <button
+                  onClick={handleExportPDF}
+                  disabled={!isFormValid}
+                  className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-emerald-600 border border-transparent rounded-lg text-sm font-bold text-white hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Gerar PDF
+                </button>
+              </>
+            ) : (
+              <>
+                <Link href="/#planos" className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-neutral-100 border border-neutral-200 rounded-lg text-sm font-medium text-neutral-500 hover:bg-neutral-200 transition-colors">
+                  <Lock className="w-4 h-4 mr-2" />
+                  Imprimir
+                </Link>
+                <Link href="/#planos" className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-emerald-600/50 border border-transparent rounded-lg text-sm font-bold text-white hover:bg-emerald-600/70 transition-colors">
+                  <Lock className="w-4 h-4 mr-2" />
+                  Gerar PDF
+                </Link>
+              </>
+            )}
+          </div>
+        </div>
 
-          {/* Grid de Inputs e Resultados */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-            
-            {/* Coluna de Inputs */}
-            <div className="lg:col-span-5 bg-white rounded-2xl border border-neutral-200 shadow-sm p-6 space-y-6">
+        {!isPro && (
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start">
+            <Info className="w-5 h-5 text-amber-600 mt-0.5 mr-3 shrink-0" />
+            <div>
+              <h3 className="text-sm font-bold text-amber-900">Recurso Premium</h3>
+              <p className="text-sm text-amber-800 mt-1">
+                A geração de laudos em PDF e impressão estão disponíveis apenas no Plano Pro. 
+                <Link href="/#planos" className="font-bold underline ml-1">Fazer upgrade</Link>
+              </p>
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          
+          {/* Coluna da Esquerda: Inputs (7 colunas) */}
+          <div className="lg:col-span-7 space-y-6">
+
               <h2 className="font-bold text-lg text-neutral-800 border-b pb-3 border-neutral-100">
                 Parâmetros da Carga
               </h2>
@@ -287,48 +300,50 @@ export default function QuebraUmidadeClient({ isPro = false }: { isPro?: boolean
               </div>
 
               {/* Informações obrigatórias para o laudo */}
-              <div className="pt-4 border-t border-neutral-100 space-y-3">
+              <div className="pt-4 border-t border-neutral-100 space-y-4">
                 <h3 className="text-xs font-bold text-neutral-800 uppercase tracking-wider flex items-center gap-1">
                   Laudo Técnico <span className="text-red-500 font-bold">*</span>
                 </h3>
-                <div className="space-y-3">
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-bold text-neutral-600 block">Responsável Técnico *</span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">Responsável Técnico *</label>
                     <input
                       type="text"
                       placeholder="Nome do agrônomo ou técnico"
                       value={responsavelTecnico}
+                      readOnly={!!userName}
                       onChange={(e) => {
                         setResponsavelTecnico(e.target.value);
                         if(produtor.trim() !== "" && e.target.value.trim() !== "") setShowValidationError(false);
                       }}
-                      className={`w-full border rounded-lg px-2.5 py-1.5 text-xs focus:ring-emerald-600 focus:border-emerald-600 transition-colors ${showValidationError && responsavelTecnico.trim() === "" ? "border-red-500 bg-red-50" : "border-neutral-200"}`}
+                      className={`w-full px-3 py-2 border rounded-lg text-sm transition-colors ${showValidationError && responsavelTecnico.trim() === "" ? "border-red-500 bg-red-50" : "border-neutral-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"} ${userName ? "bg-neutral-100 text-neutral-500 cursor-not-allowed" : ""}`}
                     />
                   </div>
-                  <div className="space-y-1">
-                    <span className="text-[10px] font-bold text-neutral-600 block">Produtor *</span>
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">Produtor / Cliente *</label>
                     <input
                       type="text"
-                      placeholder="Nome do produtor / cliente"
+                      placeholder="Nome do produtor ou fazenda"
                       value={produtor}
                       onChange={(e) => {
                         setProdutor(e.target.value);
                         if(e.target.value.trim() !== "" && responsavelTecnico.trim() !== "") setShowValidationError(false);
                       }}
-                      className={`w-full border rounded-lg px-2.5 py-1.5 text-xs focus:ring-emerald-600 focus:border-emerald-600 transition-colors ${showValidationError && produtor.trim() === "" ? "border-red-500 bg-red-50" : "border-neutral-200"}`}
+                      className={`w-full px-3 py-2 border rounded-lg text-sm transition-colors ${showValidationError && produtor.trim() === "" ? "border-red-500 bg-red-50" : "border-neutral-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"}`}
                     />
                   </div>
                 </div>
                 {showValidationError && (
-                  <p className="text-[11px] font-medium text-red-600 animate-pulse">
-                    ⚠️ Responsável Técnico e Produtor são obrigatórios para emitir laudos e relatórios.
+                  <p className="text-[11px] font-medium text-red-600 animate-pulse mt-1">
+                    ⚠️ O campo Produtor / Cliente é obrigatório.
                   </p>
                 )}
               </div>
             </div>
 
-            {/* Coluna de Resultados */}
-            <div className="lg:col-span-7 space-y-6">
+          {/* Coluna da Direita: Resultados (5 colunas) */}
+          <div className="lg:col-span-5 space-y-6">
+            <div className="sticky top-6 space-y-6">
               
               {/* Card de Peso Final Principal */}
               <div className="bg-emerald-950 text-white rounded-2xl p-6 shadow-lg relative overflow-hidden">
@@ -359,67 +374,9 @@ export default function QuebraUmidadeClient({ isPro = false }: { isPro?: boolean
                   </div>
                 </div>
 
-                {/* Botões de Ação Principais */}
-                <div className="relative z-10 flex flex-col sm:flex-row gap-3 mt-4">
-                  {isPro ? (
-                    <>
-                      <button
-                        onClick={handleExportPDF}
-                        className={`flex-1 inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold text-white shadow transition-all duration-150 active:scale-[0.98] ${isFormValid ? "bg-emerald-700 hover:bg-emerald-600 cursor-pointer" : "bg-neutral-700 opacity-60 cursor-not-allowed"}`}
-                      >
-                        <FileText className="h-4.5 w-4.5" />
-                        Gerar Laudo PDF
-                      </button>
-                      <button
-                        onClick={handlePrint}
-                        className={`inline-flex items-center justify-center gap-2 rounded-xl border px-5 py-3 text-sm font-bold transition-all duration-150 active:scale-[0.98] ${isFormValid ? "border-emerald-500 hover:bg-emerald-900/50 text-emerald-100 cursor-pointer" : "border-neutral-600 text-neutral-400 opacity-60 cursor-not-allowed"}`}
-                      >
-                        <Printer className="h-4.5 w-4.5" />
-                        Imprimir
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <a
-                        href="/#planos"
-                        className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-extrabold text-amber-950 bg-amber-400 hover:bg-amber-300 shadow transition-all duration-150 active:scale-[0.98] cursor-pointer"
-                      >
-                        <span className="text-base">🔒</span>
-                        Gerar Laudo PDF (Exclusivo Pro)
-                      </a>
-                      <a
-                        href="/#planos"
-                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-amber-400/50 bg-amber-400/10 px-5 py-3 text-sm font-bold text-amber-200 hover:bg-amber-400/20 transition-all duration-150 cursor-pointer"
-                      >
-                        <span className="text-base">🔒</span>
-                        Imprimir
-                      </a>
-                    </>
-                  )}
-                </div>
-
-                {/* Banner CTA para Assinatura do Plano Pro caso o usuário não seja Pro */}
-                {!isPro ? (
-                  <div className="mt-4 p-4 rounded-xl bg-amber-500/10 border border-amber-400/30 space-y-2.5 text-xs text-amber-100 relative z-10">
-                    <div className="flex items-center gap-2 font-bold text-amber-300">
-                      <span className="text-base">🔒</span>
-                      <span>Emissão de Laudos em PDF e Impressão é Exclusiva do Plano Pro</span>
-                    </div>
-                    <p className="text-[11.5px] text-neutral-300 leading-relaxed">
-                      A visualização das fórmulas e resultados na tela é gratuita. Para gerar relatórios em PDF com a sua logomarca, CREA e dados do cliente, assine o <strong>Plano Pro</strong>.
-                    </p>
-                    <div className="pt-2 border-t border-amber-400/20 flex justify-end">
-                      <a
-                        href="/#planos"
-                        className="bg-amber-400 hover:bg-amber-300 text-amber-950 px-4 py-2 rounded-lg font-extrabold text-xs transition-colors shadow-sm inline-flex items-center gap-1.5"
-                      >
-                        Liberar Laudos em PDF no Plano Pro
-                      </a>
-                    </div>
-                  </div>
-                ) : !isFormValid ? (
+                {!isPro ? null : !isFormValid ? (
                   <div className="mt-3 p-3 rounded-xl bg-red-900/40 border border-red-500/30 text-xs text-red-200 relative z-10">
-                    ⚠️ Preencha os campos <strong>Responsável Técnico</strong> e <strong>Produtor</strong> no formulário para habilitar a emissão do laudo.
+                    ⚠️ Preencha o Produtor / Cliente para emitir o Laudo.
                   </div>
                 ) : null}
               </div>
@@ -471,13 +428,13 @@ export default function QuebraUmidadeClient({ isPro = false }: { isPro?: boolean
                           strokeDashoffset={`-${pctLimpo + pctAgua}`}
                           className="transition-all duration-300"
                         />
-                      </svg>
-                      <div className="absolute inset-0 flex flex-col justify-center items-center text-center">
-                        <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider">Aproveitável</span>
-                        <span className="text-lg font-extrabold text-neutral-800">
+                        <text x="18" y="16.5" fontFamily="sans-serif" fontSize="6" fontWeight="800" fill="#262626" textAnchor="middle" dominantBaseline="central" transform="rotate(90 18 18)">
                           {pctLimpo.toFixed(0)}%
-                        </span>
-                      </div>
+                        </text>
+                        <text x="18" y="22" fontFamily="sans-serif" fontSize="2.5" fontWeight="700" fill="#a3a3a3" textAnchor="middle" dominantBaseline="central" transform="rotate(90 18 18)">
+                          APROVEITÁVEL
+                        </text>
+                      </svg>
                     </div>
                   </div>
 
@@ -541,7 +498,7 @@ export default function QuebraUmidadeClient({ isPro = false }: { isPro?: boolean
           </div>
 
           {/* Memória de Cálculo */}
-          <div className="bg-white rounded-2xl border border-neutral-200 shadow-sm p-6 space-y-4">
+          <div className="lg:col-span-12 bg-white rounded-2xl border border-neutral-200 shadow-sm p-6 space-y-4">
             <h3 className="font-bold text-neutral-800 flex items-center gap-2 text-lg">
               <HelpCircle className="h-5 w-5 text-emerald-800" />
               Memória de Cálculo Agronômico
@@ -575,32 +532,20 @@ export default function QuebraUmidadeClient({ isPro = false }: { isPro?: boolean
               </div>
             </div>
           </div>
-
         </div>
-      </main>
+      </div>
 
       {/* Rodapé Unificado */}
       <div className="no-print">
         <Footer />
       </div>
 
-      {/* Componente de Relatório para Captura e Impressão (Design sem sobreposição) */}
-      <div 
-        className="print-only-container"
-        style={{ 
-          position: "absolute", 
-          left: "-9999px", 
-          top: "-9999px", 
-          width: "210mm", 
-          backgroundColor: "#ffffff", 
-          boxSizing: "border-box" 
-        }}
-      >
-        <div 
-          ref={reportRef} 
-          className="bg-white text-neutral-800 p-16 space-y-8 w-[210mm] flex flex-col justify-between min-h-[275mm] relative"
-          style={{ boxSizing: "border-box" }}
-        >
+      {/* ------------------------------------------------------------- */}
+      {/* ----------------- ESTRUTURA PARA PDF/PRINT ------------------- */}
+      {/* ------------------------------------------------------------- */}
+      {isPro && (
+        <div style={{ position: "absolute", left: "-9999px", top: "-9999px" }}>
+          <div id="pdf-content" ref={reportRef} className="w-[210mm] bg-white text-neutral-900 p-10 font-sans print-only-container min-h-[270mm] flex flex-col">
           {/* Corpo do Documento */}
           <div className="space-y-6">
             
@@ -616,7 +561,7 @@ export default function QuebraUmidadeClient({ isPro = false }: { isPro?: boolean
               </div>
               <div className="text-right text-xs text-neutral-500">
                 <span className="block font-bold">Relatório Técnico Digital</span>
-                <span className="block mt-0.5">{new Date().toLocaleDateString("pt-BR")}</span>
+                <span className="block mt-0.5" suppressHydrationWarning>{new Date().toLocaleDateString("pt-BR")}</span>
               </div>
             </div>
 
@@ -722,11 +667,13 @@ export default function QuebraUmidadeClient({ isPro = false }: { isPro?: boolean
                       strokeDasharray={`${pctImpureza} ${100 - pctImpureza}`}
                       strokeDashoffset={`-${pctLimpo + pctAgua}`}
                     />
+                    <text x="18" y="16.5" fontFamily="sans-serif" fontSize="6" fontWeight="800" fill="#262626" textAnchor="middle" dominantBaseline="central" transform="rotate(90 18 18)">
+                      {pctLimpo.toFixed(0)}%
+                    </text>
+                    <text x="18" y="22" fontFamily="sans-serif" fontSize="2.5" fontWeight="700" fill="#a3a3a3" textAnchor="middle" dominantBaseline="central" transform="rotate(90 18 18)">
+                      LÍQUIDO
+                    </text>
                   </svg>
-                  <div className="absolute inset-0 flex flex-col justify-center items-center text-center">
-                    <span className="text-[12px] font-bold text-neutral-800">{pctLimpo.toFixed(0)}%</span>
-                    <span className="text-[7px] text-neutral-400 uppercase font-extrabold">Líquido</span>
-                  </div>
                 </div>
                 
                 {/* Legendas rápidas do Gráfico no PDF */}
@@ -784,13 +731,27 @@ export default function QuebraUmidadeClient({ isPro = false }: { isPro?: boolean
             </div>
           </div>
 
-          {/* Rodapé do PDF */}
           <div className="border-t pt-6 border-neutral-200 text-[10px] text-neutral-400 text-center space-y-1 mt-auto">
             <span className="block font-bold">Talhão Digital - www.talhaodigital.com.br</span>
             <span className="block">Este laudo técnico foi emitido digitalmente e é uma representação baseada nas fórmulas agronômicas de descontos de secagem e impurezas.</span>
           </div>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Esconder na impressão os elementos de tela */}
+      <style dangerouslySetInnerHTML={{__html: `
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          ${isPro ? 
+            "#pdf-content, #pdf-content * { visibility: visible; } #pdf-content { position: absolute !important; left: 0 !important; top: 0 !important; width: 100% !important; margin: 0 !important; padding: 20mm !important; }" 
+          : 
+            "body { display: none !important; }"
+          }
+        }
+      `}} />
     </div>
   );
 }

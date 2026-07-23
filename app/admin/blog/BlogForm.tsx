@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Save, Eye, Loader2, Image2 } from "lucide-react";
+import { ArrowLeft, Save, Eye, Loader2, Image } from "lucide-react";
 import Link from "next/link";
 import TiptapEditor from "@/components/TiptapEditor";
 
@@ -248,7 +248,7 @@ export default function BlogForm({ post }: BlogFormProps) {
                     <Loader2 className="h-6 w-6 animate-spin text-emerald-800" />
                   ) : (
                     <>
-                      <Image2 className="h-6 w-6 text-neutral-400" />
+                      <Image className="h-6 w-6 text-neutral-400" />
                       <span className="text-xs font-bold text-neutral-500 mt-2">Escolher imagem de capa</span>
                     </>
                   )}

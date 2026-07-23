@@ -6,14 +6,18 @@ import { ptBR } from "@clerk/localizations";
 
 import CookieBanner from "@/components/CookieBanner";
 
+import SyncProvider from "@/components/SyncProvider";
+
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Talhão Digital - Calculadoras Agropecuárias de Alta Precisão",
   description: "SaaS de calculadoras agropecuárias para agrônomos, técnicos, produtores e pecuaristas no Brasil.",
   metadataBase: new URL("https://talhaodigital.com.br"),
+  manifest: "/manifest.json",
   icons: {
     icon: "/favicon.svg",
+    apple: "/logo.png",
   },
 };
 
@@ -47,8 +51,10 @@ export default function RootLayout({
     <ClerkProvider localization={ptBRCustom}>
       <html lang="pt-BR">
         <body className={`${inter.className} min-h-screen flex flex-col`}>
-          {children}
-          <CookieBanner />
+          <SyncProvider>
+            {children}
+            <CookieBanner />
+          </SyncProvider>
         </body>
       </html>
     </ClerkProvider>

@@ -71,25 +71,50 @@ export default function Header() {
                   </Link>
 
                   {/* Placeholders */}
-                  <div className="flex items-start gap-3 p-3 rounded-xl opacity-60 cursor-not-allowed">
-                    <div className="p-2 bg-neutral-100 text-neutral-400 rounded-lg">
+                  {/* Item 2: Calagem e Gessagem */}
+                  <Link 
+                    href="/ferramentas/calagem-gessagem"
+                    className="flex items-start gap-3 p-3 rounded-xl hover:bg-emerald-50/50 transition-colors group"
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    <div className="p-2 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors">
                       <Sprout className="h-4 w-4" />
                     </div>
                     <div>
-                      <span className="font-bold text-xs text-neutral-700 block">Calagem e Gessagem</span>
-                      <span className="text-[10px] text-emerald-800 font-semibold block mt-0.5">Em breve (Pro)</span>
+                      <span className="font-bold text-xs text-neutral-850 block">Calagem e Gessagem</span>
+                      <span className="text-[10.5px] text-neutral-500 block mt-0.5">Saturação por bases (V%)</span>
                     </div>
-                  </div>
+                  </Link>
 
-                  <div className="flex items-start gap-3 p-3 rounded-xl opacity-60 cursor-not-allowed">
-                    <div className="p-2 bg-neutral-100 text-neutral-400 rounded-lg">
+                  {/* Item 3: Balanceador NPK */}
+                  <Link 
+                    href="/ferramentas/balanceador-npk"
+                    className="flex items-start gap-3 p-3 rounded-xl hover:bg-emerald-50/50 transition-colors group"
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    <div className="p-2 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors">
                       <Settings className="h-4 w-4" />
                     </div>
                     <div>
-                      <span className="font-bold text-xs text-neutral-700 block">Calibração de Bicos</span>
-                      <span className="text-[10px] text-emerald-800 font-semibold block mt-0.5">Em breve (Grátis)</span>
+                      <span className="font-bold text-xs text-neutral-850 block">Balanceador NPK</span>
+                      <span className="text-[10.5px] text-neutral-500 block mt-0.5">Formulação e Mistura</span>
                     </div>
-                  </div>
+                  </Link>
+
+                  {/* Item 4: Calibrador de Bicos */}
+                  <Link 
+                    href="/ferramentas/calibrador-bicos"
+                    className="flex items-start gap-3 p-3 rounded-xl hover:bg-emerald-50/50 transition-colors group"
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    <div className="p-2 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors">
+                      <Settings className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-xs text-neutral-850 block">Calibração de Bicos</span>
+                      <span className="text-[10.5px] text-neutral-500 block mt-0.5">Vazão (L/min) e Desvio</span>
+                    </div>
+                  </Link>
                 </div>
               </div>
             )}

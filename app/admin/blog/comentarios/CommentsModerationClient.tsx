@@ -11,7 +11,7 @@ interface CommentItem {
   authorEmail: string;
   content: string;
   status: "pending" | "approved" | "spam" | "trash";
-  createdAt: string;
+  createdAt: Date | string;
   postTitle: string;
   postSlug: string;
 }

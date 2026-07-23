@@ -199,6 +199,30 @@ export default function DashboardClient({ isPro, proType, plans, reports, subscr
               >
                 + GPS
               </Link>
+              <Link 
+                href="/ferramentas/perda-colheita"
+                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
+              >
+                + Perdas
+              </Link>
+              <Link 
+                href="/ferramentas/volume-silo"
+                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
+              >
+                + Silos
+              </Link>
+              <Link 
+                href="/ferramentas/conversor-unidades"
+                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
+              >
+                + Conversor
+              </Link>
+              <Link 
+                href="/ferramentas/quadrado-pearson"
+                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
+              >
+                + Pearson
+              </Link>
             </div>
           </div>
 

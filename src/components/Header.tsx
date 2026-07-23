@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { UserButton, SignedIn, SignedOut, useUser } from "@clerk/nextjs";
-import { ChevronDown, Wheat, Sprout, Settings, ShieldCheck, BookOpen } from "lucide-react";
+import { ChevronDown, Wheat, Sprout, Settings, ShieldCheck, BookOpen, Warehouse, Scale, Dna } from "lucide-react";
 
 export default function Header() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -169,9 +169,58 @@ export default function Header() {
                          <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">Custo horário e linear</span>
                        </div>
                      </Link>
+
+                     <Link 
+                       href="/ferramentas/perda-colheita"
+                       className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-emerald-50/50 transition-colors group"
+                       onClick={() => setDropdownOpen(false)}
+                     >
+                       <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
+                         <Wheat className="h-3.5 w-3.5" />
+                       </div>
+                       <div>
+                         <span className="font-bold text-[11px] text-neutral-850 block">Perda na Colheita</span>
+                         <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">Amostragem Soja/Milho</span>
+                       </div>
+                     </Link>
                    </div>
 
-                   {/* Categoria 4: Agricultura de Precisão */}
+                    {/* Categoria 4: Pecuária & Silagem */}
+                    <div className="space-y-2">
+                      <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block px-2 pb-1 border-b border-neutral-100">
+                        Pecuária & Silagem
+                      </span>
+
+                      <Link 
+                        href="/ferramentas/volume-silo"
+                        className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-emerald-50/50 transition-colors group"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
+                          <Warehouse className="h-3.5 w-3.5" />
+                        </div>
+                        <div>
+                          <span className="font-bold text-[11px] text-neutral-850 block">Volume de Silo</span>
+                          <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">Trincheira, Encosto e Bolsa</span>
+                        </div>
+                      </Link>
+
+                      <Link 
+                        href="/ferramentas/quadrado-pearson"
+                        className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-emerald-50/50 transition-colors group"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
+                          <Dna className="h-3.5 w-3.5" />
+                        </div>
+                        <div>
+                          <span className="font-bold text-[11px] text-neutral-850 block">Balanceador (Pearson)</span>
+                          <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">% Proteína Bruta da Ração</span>
+                        </div>
+                      </Link>
+                    </div>
+
+                    {/* Categoria 5: Agricultura de Precisão */}
                    <div className="space-y-2">
                      <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block px-2 pb-1 border-b border-neutral-100">
                        Precisão & Mapas
@@ -188,6 +237,20 @@ export default function Header() {
                        <div>
                          <span className="font-bold text-[11px] text-neutral-850 block">Conversor de GPS</span>
                          <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">KML/GPX para Shapefile</span>
+                       </div>
+                     </Link>
+
+                     <Link 
+                       href="/ferramentas/conversor-unidades"
+                       className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-emerald-50/50 transition-colors group"
+                       onClick={() => setDropdownOpen(false)}
+                     >
+                       <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
+                         <Scale className="h-3.5 w-3.5" />
+                       </div>
+                       <div>
+                         <span className="font-bold text-[11px] text-neutral-850 block">Conversor de Unidades</span>
+                         <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">Alqueires, Bushels e Pesos</span>
                        </div>
                      </Link>
                    </div>

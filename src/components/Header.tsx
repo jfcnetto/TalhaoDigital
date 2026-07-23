@@ -47,77 +47,153 @@ export default function Header() {
               <ChevronDown className="h-4 w-4" />
             </button>
 
-            {/* Menu Dropdown */}
-            {dropdownOpen && (
-              <div className="absolute left-0 mt-0 w-80 rounded-2xl border border-neutral-200 bg-white p-4 shadow-xl animate-in fade-in slide-in-from-top-2 duration-200">
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block px-3 mb-2">
-                    Escolha uma Ferramenta
-                  </span>
-                  
-                  {/* Item 1: Quebra de Umidade */}
-                  <Link 
-                    href="/ferramentas/quebra-umidade"
-                    className="flex items-start gap-3 p-3 rounded-xl hover:bg-emerald-50/50 transition-colors group"
-                    onClick={() => setDropdownOpen(false)}
-                  >
-                    <div className="p-2 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors">
-                      <Wheat className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <span className="font-bold text-xs text-neutral-850 block">Quebra de Umidade</span>
-                      <span className="text-[10.5px] text-neutral-500 block mt-0.5">Calcule desconto de peso e água</span>
-                    </div>
-                  </Link>
+             {/* Menu Dropdown Multicolunas Organizado */}
+             {dropdownOpen && (
+               <div className="absolute left-1/2 -translate-x-1/2 mt-0 w-[780px] rounded-2xl border border-neutral-200 bg-white p-5 shadow-xl animate-in fade-in slide-in-from-top-2 duration-200">
+                 <div className="grid grid-cols-4 gap-6">
+                   
+                   {/* Categoria 1: Solo & Nutrição */}
+                   <div className="space-y-2">
+                     <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block px-2 pb-1 border-b border-neutral-100">
+                       Solo & Nutrição
+                     </span>
+                     
+                     <Link 
+                       href="/ferramentas/calagem-gessagem"
+                       className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-emerald-50/50 transition-colors group"
+                       onClick={() => setDropdownOpen(false)}
+                     >
+                       <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
+                         <Sprout className="h-3.5 w-3.5" />
+                       </div>
+                       <div>
+                         <span className="font-bold text-[11px] text-neutral-850 block">Calagem e Gessagem</span>
+                         <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">Saturação por bases V%</span>
+                       </div>
+                     </Link>
 
-                  {/* Placeholders */}
-                  {/* Item 2: Calagem e Gessagem */}
-                  <Link 
-                    href="/ferramentas/calagem-gessagem"
-                    className="flex items-start gap-3 p-3 rounded-xl hover:bg-emerald-50/50 transition-colors group"
-                    onClick={() => setDropdownOpen(false)}
-                  >
-                    <div className="p-2 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors">
-                      <Sprout className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <span className="font-bold text-xs text-neutral-850 block">Calagem e Gessagem</span>
-                      <span className="text-[10.5px] text-neutral-500 block mt-0.5">Saturação por bases (V%)</span>
-                    </div>
-                  </Link>
+                     <Link 
+                       href="/ferramentas/balanceador-npk"
+                       className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-emerald-50/50 transition-colors group"
+                       onClick={() => setDropdownOpen(false)}
+                     >
+                       <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
+                         <Settings className="h-3.5 w-3.5" />
+                       </div>
+                       <div>
+                         <span className="font-bold text-[11px] text-neutral-850 block">Balanceador NPK</span>
+                         <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">Mistura de formulações</span>
+                       </div>
+                     </Link>
+                   </div>
 
-                  {/* Item 3: Balanceador NPK */}
-                  <Link 
-                    href="/ferramentas/balanceador-npk"
-                    className="flex items-start gap-3 p-3 rounded-xl hover:bg-emerald-50/50 transition-colors group"
-                    onClick={() => setDropdownOpen(false)}
-                  >
-                    <div className="p-2 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors">
-                      <Settings className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <span className="font-bold text-xs text-neutral-850 block">Balanceador NPK</span>
-                      <span className="text-[10.5px] text-neutral-500 block mt-0.5">Formulação e Mistura</span>
-                    </div>
-                  </Link>
+                   {/* Categoria 2: Tecnologia de Aplicação */}
+                   <div className="space-y-2">
+                     <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block px-2 pb-1 border-b border-neutral-100">
+                       Pulverização
+                     </span>
 
-                  {/* Item 4: Calibrador de Bicos */}
-                  <Link 
-                    href="/ferramentas/calibrador-bicos"
-                    className="flex items-start gap-3 p-3 rounded-xl hover:bg-emerald-50/50 transition-colors group"
-                    onClick={() => setDropdownOpen(false)}
-                  >
-                    <div className="p-2 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors">
-                      <Settings className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <span className="font-bold text-xs text-neutral-850 block">Calibração de Bicos</span>
-                      <span className="text-[10.5px] text-neutral-500 block mt-0.5">Vazão (L/min) e Desvio</span>
-                    </div>
-                  </Link>
-                </div>
-              </div>
-            )}
+                     <Link 
+                       href="/ferramentas/calibrador-bicos"
+                       className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-emerald-50/50 transition-colors group"
+                       onClick={() => setDropdownOpen(false)}
+                     >
+                       <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
+                         <Settings className="h-3.5 w-3.5" />
+                       </div>
+                       <div>
+                         <span className="font-bold text-[11px] text-neutral-850 block">Calibração de Bicos</span>
+                         <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">Vazão real (L/min)</span>
+                       </div>
+                     </Link>
+
+                     <Link 
+                       href="/ferramentas/mistura-tanque"
+                       className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-emerald-50/50 transition-colors group"
+                       onClick={() => setDropdownOpen(false)}
+                     >
+                       <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
+                         <Settings className="h-3.5 w-3.5" />
+                       </div>
+                       <div>
+                         <span className="font-bold text-[11px] text-neutral-850 block">Mistura de Tanque</span>
+                         <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">Ordem e compatibilidade</span>
+                       </div>
+                     </Link>
+                   </div>
+
+                   {/* Categoria 3: Operações & Grãos */}
+                   <div className="space-y-2">
+                     <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block px-2 pb-1 border-b border-neutral-100">
+                       Operações & Grãos
+                     </span>
+
+                     <Link 
+                       href="/ferramentas/quebra-umidade"
+                       className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-emerald-50/50 transition-colors group"
+                       onClick={() => setDropdownOpen(false)}
+                     >
+                       <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
+                         <Wheat className="h-3.5 w-3.5" />
+                       </div>
+                       <div>
+                         <span className="font-bold text-[11px] text-neutral-850 block">Quebra de Umidade</span>
+                         <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">Desconto comercial</span>
+                       </div>
+                     </Link>
+
+                     <Link 
+                       href="/ferramentas/rendimento-trator"
+                       className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-emerald-50/50 transition-colors group"
+                       onClick={() => setDropdownOpen(false)}
+                     >
+                       <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
+                         <Settings className="h-3.5 w-3.5" />
+                       </div>
+                       <div>
+                         <span className="font-bold text-[11px] text-neutral-850 block">Rendimento de Trator</span>
+                         <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">Campo e tempo (ha/h)</span>
+                       </div>
+                     </Link>
+
+                     <Link 
+                       href="/ferramentas/depreciacao-maquinas"
+                       className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-emerald-50/50 transition-colors group"
+                       onClick={() => setDropdownOpen(false)}
+                     >
+                       <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
+                         <Settings className="h-3.5 w-3.5" />
+                       </div>
+                       <div>
+                         <span className="font-bold text-[11px] text-neutral-850 block">Depreciação de Máquinas</span>
+                         <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">Custo horário e linear</span>
+                       </div>
+                     </Link>
+                   </div>
+
+                   {/* Categoria 4: Agricultura de Precisão */}
+                   <div className="space-y-2">
+                     <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider block px-2 pb-1 border-b border-neutral-100">
+                       Precisão & Mapas
+                     </span>
+
+                     <Link 
+                       href="/ferramentas/conversor-gps"
+                       className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-emerald-50/50 transition-colors group"
+                       onClick={() => setDropdownOpen(false)}
+                     >
+                       <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
+                         <Settings className="h-3.5 w-3.5" />
+                       </div>
+                       <div>
+                         <span className="font-bold text-[11px] text-neutral-850 block">Conversor de GPS</span>
+                         <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">KML/GPX para Shapefile</span>
+                       </div>
+                     </Link>
+                   </div>
+                 </div>
+               </div>
+             )}
           </div>
 
           <Link href="/blog" className="hover:text-emerald-800 transition-colors py-2">Blog</Link>

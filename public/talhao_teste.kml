@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+  <Document>
+    <name>Talhao_Teste_GPS.kml</name>
+    <description>Contorno de talhão para testes de geoprocessamento e conversão de arquivos GPS no Talhão Digital.</description>
+    <Style id="talhaoStyle">
+      <LineStyle>
+        <color>ff009910</color>
+        <width>3</width>
+      </LineStyle>
+      <PolyStyle>
+        <color>40009910</color>
+      </PolyStyle>
+    </Style>
+    <Placemark>
+      <name>Talhão Principal 01</name>
+      <styleUrl>#talhaoStyle</styleUrl>
+      <Polygon>
+        <outerBoundaryIs>
+          <LinearRing>
+            <coordinates>
+              -47.8825,-15.7941,0
+              -47.8810,-15.7941,0
+              -47.8810,-15.7955,0
+              -47.8825,-15.7955,0
+              -47.8825,-15.7941,0
+            </coordinates>
+          </LinearRing>
+        </outerBoundaryIs>
+      </Polygon>
+    </Placemark>
+  </Document>
+</kml>

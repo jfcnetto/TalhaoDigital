@@ -175,6 +175,30 @@ export default function DashboardClient({ isPro, proType, plans, reports, subscr
               >
                 + Bicos
               </Link>
+              <Link 
+                href="/ferramentas/mistura-tanque"
+                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
+              >
+                + Mistura
+              </Link>
+              <Link 
+                href="/ferramentas/rendimento-trator"
+                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
+              >
+                + Tratores
+              </Link>
+              <Link 
+                href="/ferramentas/depreciacao-maquinas"
+                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
+              >
+                + Custos
+              </Link>
+              <Link 
+                href="/ferramentas/conversor-gps"
+                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
+              >
+                + GPS
+              </Link>
             </div>
           </div>
 

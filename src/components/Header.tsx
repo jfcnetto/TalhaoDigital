@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { UserButton, SignedIn, SignedOut, useUser } from "@clerk/nextjs";
-import { ChevronDown, Wheat, Sprout, Settings, ShieldCheck, BookOpen, Warehouse, Scale, Dna } from "lucide-react";
+import { ChevronDown, Wheat, Sprout, Settings, ShieldCheck, BookOpen, Warehouse, Scale, Dna, TrendingUp, Calendar } from "lucide-react";
 
 export default function Header() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -183,6 +183,20 @@ export default function Header() {
                          <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">Amostragem Soja/Milho</span>
                        </div>
                      </Link>
+
+                     <Link 
+                       href="/ferramentas/ponto-equilibrio"
+                       className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-emerald-50/50 transition-colors group"
+                       onClick={() => setDropdownOpen(false)}
+                     >
+                       <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
+                         <Scale className="h-3.5 w-3.5" />
+                       </div>
+                       <div>
+                         <span className="font-bold text-[11px] text-neutral-850 block">Ponto de Equilíbrio</span>
+                         <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">Margem por ha e sacas/ha</span>
+                       </div>
+                     </Link>
                    </div>
 
                     {/* Categoria 4: Pecuária & Silagem */}
@@ -216,6 +230,48 @@ export default function Header() {
                         <div>
                           <span className="font-bold text-[11px] text-neutral-850 block">Balanceador (Pearson)</span>
                           <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">% Proteína Bruta da Ração</span>
+                        </div>
+                      </Link>
+
+                      <Link 
+                        href="/ferramentas/suporte-pastagem"
+                        className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-emerald-50/50 transition-colors group"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
+                          <Sprout className="h-3.5 w-3.5" />
+                        </div>
+                        <div>
+                          <span className="font-bold text-[11px] text-neutral-850 block">Suporte de Pastagem</span>
+                          <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">Capacidade de Lotação (UA/ha)</span>
+                        </div>
+                      </Link>
+
+                      <Link 
+                        href="/ferramentas/rendimento-carcaca"
+                        className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-emerald-50/50 transition-colors group"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
+                          <TrendingUp className="h-3.5 w-3.5" />
+                        </div>
+                        <div>
+                          <span className="font-bold text-[11px] text-neutral-850 block">Rendimento de Carcaça</span>
+                          <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">Peso da Carcaça e Valor da Arroba (@)</span>
+                        </div>
+                      </Link>
+
+                      <Link 
+                        href="/ferramentas/gestacao-vacas"
+                        className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-emerald-50/50 transition-colors group"
+                        onClick={() => setDropdownOpen(false)}
+                      >
+                        <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
+                          <Calendar className="h-3.5 w-3.5" />
+                        </div>
+                        <div>
+                          <span className="font-bold text-[11px] text-neutral-850 block">Gestão Gestacional Vacas</span>
+                          <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">Previsão de Parto e Secagem</span>
                         </div>
                       </Link>
                     </div>

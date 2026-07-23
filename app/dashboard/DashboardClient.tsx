@@ -223,6 +223,30 @@ export default function DashboardClient({ isPro, proType, plans, reports, subscr
               >
                 + Pearson
               </Link>
+              <Link 
+                href="/ferramentas/suporte-pastagem"
+                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
+              >
+                + Pastagem
+              </Link>
+              <Link 
+                href="/ferramentas/rendimento-carcaca"
+                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
+              >
+                + Carcaça
+              </Link>
+              <Link 
+                href="/ferramentas/gestacao-vacas"
+                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
+              >
+                + Gestão Vacas
+              </Link>
+              <Link 
+                href="/ferramentas/ponto-equilibrio"
+                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
+              >
+                + Ponto Equilíbrio
+              </Link>
             </div>
           </div>
 

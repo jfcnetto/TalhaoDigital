@@ -257,7 +257,12 @@ export default function SuportePastagemClient({ isPro, userName }: SuportePastag
             </div>
             <div>
               <h1 className="text-2xl font-extrabold text-neutral-900 tracking-tight">Capacidade de Suporte de Pastagem</h1>
-              <p className="text-sm text-neutral-500 mt-0.5">Lotação Animal Recomendada (UA/ha) — Pecuária & Silagem</p>
+              <p className="text-sm text-neutral-500 mt-0.5">
+                Lotação Animal Recomendada (UA/ha) — Pecuária & Silagem
+                <Link href="/ajuda#suporte-pastagem" className="text-emerald-600 hover:underline font-bold text-xs ml-1.5">
+                  (Como usar?)
+                </Link>
+              </p>
             </div>
           </div>
 

@@ -162,6 +162,9 @@ export default function MisturaTanqueClient({ isPro, userName }: MisturaTanqueCl
             </h1>
             <p className="text-neutral-500 text-sm mt-1">
               Selecione os agroquímicos e verifique a ordem padrão de despejo no pulverizador para evitar entupimento de bicos.
+              <Link href="/ajuda#mistura-tanque" className="text-emerald-600 hover:underline font-bold text-xs ml-1.5">
+                (Como usar?)
+              </Link>
             </p>
           </div>
           

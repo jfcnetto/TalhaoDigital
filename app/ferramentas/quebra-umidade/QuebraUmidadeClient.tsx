@@ -150,6 +150,9 @@ export default function QuebraUmidadeClient({ isPro = false, userName }: { isPro
             </h1>
             <p className="text-neutral-500 text-sm mt-1">
               Calcule a perda de peso por secagem de água e excesso de impurezas.
+              <Link href="/ajuda#quebra-umidade" className="text-emerald-600 hover:underline font-bold text-xs ml-1.5">
+                (Como usar?)
+              </Link>
             </p>
           </div>
           

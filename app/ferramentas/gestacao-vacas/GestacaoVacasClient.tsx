@@ -326,7 +326,12 @@ export default function GestacaoVacasClient({ isPro, userName }: GestacaoVacasCl
             </div>
             <div>
               <h1 className="text-2xl font-extrabold text-neutral-900 tracking-tight">Idade Gestacional e Alerta de Manejo para Vacas</h1>
-              <p className="text-sm text-neutral-500 mt-0.5">DPP, Período de Secagem e Cronograma Vacinal Pré-Parto — Pecuária & Silagem</p>
+              <p className="text-sm text-neutral-500 mt-0.5">
+                DPP, Período de Secagem e Cronograma Vacinal Pré-Parto — Pecuária & Silagem
+                <Link href="/ajuda#gestacao-vacas" className="text-emerald-600 hover:underline font-bold text-xs ml-1.5">
+                  (Como usar?)
+                </Link>
+              </p>
             </div>
           </div>
 

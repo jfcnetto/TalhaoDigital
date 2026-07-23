@@ -313,7 +313,12 @@ export default function VolumeSiloClient({ isPro, userName }: VolumeSiloClientPr
             </div>
             <div>
               <h1 className="text-2xl font-extrabold text-neutral-900 tracking-tight">Calculadora de Volume de Silo</h1>
-              <p className="text-sm text-neutral-500 mt-0.5">Trincheira, Encosto e Bolsa — Armazenamento & Silagem</p>
+              <p className="text-sm text-neutral-500 mt-0.5">
+                Trincheira, Encosto e Bolsa — Armazenamento & Silagem
+                <Link href="/ajuda#volume-silo" className="text-emerald-600 hover:underline font-bold text-xs ml-1.5">
+                  (Como usar?)
+                </Link>
+              </p>
             </div>
           </div>
 

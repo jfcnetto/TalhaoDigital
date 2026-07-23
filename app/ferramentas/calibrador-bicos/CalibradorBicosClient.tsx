@@ -139,6 +139,9 @@ export default function CalibradorBicosClient({ isPro, userName }: CalibradorBic
             </h1>
             <p className="text-neutral-500 text-sm mt-1">
               Calcule a vazão teórica L/min por bico e compare com a vazão real coletada em campo.
+              <Link href="/ajuda#calibrador-bicos" className="text-emerald-600 hover:underline font-bold text-xs ml-1.5">
+                (Como usar?)
+              </Link>
             </p>
           </div>
           

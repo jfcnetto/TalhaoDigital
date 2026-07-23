@@ -195,7 +195,12 @@ export default function RendimentoCarcacaClient({ isPro, userName }: RendimentoC
             </div>
             <div>
               <h1 className="text-2xl font-extrabold text-neutral-900 tracking-tight">Simulador de Rendimento de Carcaça e Arroba</h1>
-              <p className="text-sm text-neutral-500 mt-0.5">Rendimento Comercial, Faturamento em Arrobas (@) e Reais (R$) — Pecuária & Silagem</p>
+              <p className="text-sm text-neutral-500 mt-0.5">
+                Rendimento Comercial, Faturamento em Arrobas (@) e Reais (R$) — Pecuária & Silagem
+                <Link href="/ajuda#rendimento-carcaca" className="text-emerald-600 hover:underline font-bold text-xs ml-1.5">
+                  (Como usar?)
+                </Link>
+              </p>
             </div>
           </div>
 

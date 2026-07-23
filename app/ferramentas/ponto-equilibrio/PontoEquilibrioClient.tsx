@@ -474,7 +474,12 @@ export default function PontoEquilibrioClient({ isPro, userName }: PontoEquilibr
             </div>
             <div>
               <h1 className="text-2xl font-extrabold text-neutral-900 tracking-tight">Margem de Contribuição e Ponto de Equilíbrio</h1>
-              <p className="text-sm text-neutral-500 mt-0.5">Custos Fixos e Variáveis, Viabilidade em Sacas/ha e Preço de Equilíbrio — Gestão Agrícola</p>
+              <p className="text-sm text-neutral-500 mt-0.5">
+                Custos Fixos e Variáveis, Viabilidade em Sacas/ha e Preço de Equilíbrio — Gestão Agrícola
+                <Link href="/ajuda#ponto-equilibrio" className="text-emerald-600 hover:underline font-bold text-xs ml-1.5">
+                  (Como usar?)
+                </Link>
+              </p>
             </div>
           </div>
 

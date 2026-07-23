@@ -308,7 +308,12 @@ export default function ConversorUnidadesClient({ isPro, userName }: ConversorUn
             </div>
             <div>
               <h1 className="text-2xl font-extrabold text-neutral-900 tracking-tight">Conversor de Unidades Agrícolas Regionais</h1>
-              <p className="text-sm text-neutral-500 mt-0.5">Alqueires, Hectares, Bushels e Paridade de Comercialização</p>
+              <p className="text-sm text-neutral-500 mt-0.5">
+                Alqueires, Hectares, Bushels e Paridade de Comercialização
+                <Link href="/ajuda#conversor-unidades" className="text-emerald-600 hover:underline font-bold text-xs ml-1.5">
+                  (Como usar?)
+                </Link>
+              </p>
             </div>
           </div>
 

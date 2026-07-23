@@ -156,6 +156,9 @@ export default function BalanceadorNpkClient({ isPro, userName }: BalanceadorNpk
             </h1>
             <p className="text-neutral-500 text-sm mt-1">
               Calcule a quantidade exata de matérias-primas para formular o seu adubo.
+              <Link href="/ajuda#balanceador-npk" className="text-emerald-600 hover:underline font-bold text-xs ml-1.5">
+                (Como usar?)
+              </Link>
             </p>
           </div>
           

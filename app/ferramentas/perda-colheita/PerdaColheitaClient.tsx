@@ -148,6 +148,9 @@ export default function PerdaColheitaClient({ isPro, userName }: PerdaColheitaCl
             </h1>
             <p className="text-neutral-500 text-sm mt-1">
               Avalie o índice de perdas (sacas/ha) na colheita mecanizada de grãos usando o método do aro de amostragem no solo.
+              <Link href="/ajuda#perda-colheita" className="text-emerald-600 hover:underline font-bold text-xs ml-1.5">
+                (Como usar?)
+              </Link>
             </p>
           </div>
           

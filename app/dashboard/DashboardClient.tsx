@@ -247,6 +247,24 @@ export default function DashboardClient({ isPro, proType, plans, reports, subscr
               >
                 + Ponto Equilíbrio
               </Link>
+              <Link 
+                href="/ferramentas/simulador-barter"
+                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
+              >
+                + Barter
+              </Link>
+              <Link 
+                href="/ferramentas/planejador-compras"
+                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
+              >
+                + Compras
+              </Link>
+              <Link 
+                href="/ferramentas/transicao-organicos"
+                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
+              >
+                + Orgânicos
+              </Link>
             </div>
           </div>
 

@@ -130,6 +130,9 @@ export default function CalagemGessagemClient({ isPro = false, userName }: { isP
             </h1>
             <p className="text-neutral-500 text-sm mt-1">
               Determine a Necessidade de Calcário (NC) pelo método V% e a Necessidade de Gesso (NG).
+              <Link href="/ajuda#calagem-gessagem" className="text-emerald-600 hover:underline font-bold text-xs ml-1.5">
+                (Como usar?)
+              </Link>
             </p>
           </div>
           

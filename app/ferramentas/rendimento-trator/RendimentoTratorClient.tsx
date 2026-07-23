@@ -123,6 +123,9 @@ export default function RendimentoTratorClient({ isPro, userName }: RendimentoTr
             </h1>
             <p className="text-neutral-500 text-sm mt-1">
               Calcule a capacidade de trabalho efetiva (ha/h) do trator com implemento e estime o tempo total para concluir a área.
+              <Link href="/ajuda#rendimento-trator" className="text-emerald-600 hover:underline font-bold text-xs ml-1.5">
+                (Como usar?)
+              </Link>
             </p>
           </div>
           

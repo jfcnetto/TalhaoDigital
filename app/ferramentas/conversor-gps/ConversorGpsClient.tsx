@@ -134,6 +134,9 @@ export default function ConversorGpsClient({ isPro, userName }: ConversorGpsClie
             </h1>
             <p className="text-neutral-500 text-sm mt-1">
               Converta arquivos espaciais de GPS de tratores ou do Google Earth (KML / GPX) diretamente para o padrão Shapefile do SIG.
+              <Link href="/ajuda#conversor-gps" className="text-emerald-600 hover:underline font-bold text-xs ml-1.5">
+                (Como usar?)
+              </Link>
             </p>
           </div>
           

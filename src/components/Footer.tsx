@@ -12,6 +12,7 @@ export default function Footer() {
         <div className="flex gap-6 text-sm font-medium">
           <Link href="/" className="hover:text-emerald-800 transition-colors">Início</Link>
           <Link href="/contato" className="hover:text-emerald-800 transition-colors">Contato</Link>
+          <Link href="/ajuda" className="hover:text-emerald-800 transition-colors">Ajuda</Link>
           <Link href="/termos" className="hover:text-emerald-800 transition-colors">Termos de Uso</Link>
           <Link href="/privacidade" className="hover:text-emerald-800 transition-colors">Privacidade</Link>
         </div>

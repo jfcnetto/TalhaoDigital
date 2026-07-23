@@ -139,6 +139,9 @@ export default function DepreciacaoMaquinasClient({ isPro, userName }: Depreciac
             </h1>
             <p className="text-neutral-500 text-sm mt-1">
               Calcule os custos fixos (depreciação) e operacionais (combustível, manutenção e mão de obra) por hora de uso do maquinário agrícola.
+              <Link href="/ajuda#depreciacao-maquinas" className="text-emerald-600 hover:underline font-bold text-xs ml-1.5">
+                (Como usar?)
+              </Link>
             </p>
           </div>
           

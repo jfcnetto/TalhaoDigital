@@ -23,10 +23,45 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     redirect('/sign-in');
   }
 
+  // Garantia preventiva de que as colunas novas da tabela users existam no banco antes de fazer qualquer query pelo Drizzle
+  try {
+    const { sql } = await import('drizzle-orm');
+    await db.execute(sql`
+      ALTER TABLE users 
+      ADD COLUMN IF NOT EXISTS professional_type text,
+      ADD COLUMN IF NOT EXISTS crea_crtq text,
+      ADD COLUMN IF NOT EXISTS conselho_estado text,
+      ADD COLUMN IF NOT EXISTS cpf_cnpj text,
+      ADD COLUMN IF NOT EXISTS phone text,
+      ADD COLUMN IF NOT EXISTS logo_url text,
+      ADD COLUMN IF NOT EXISTS avatar_url text;
+    `);
+  } catch (e) {
+    console.warn("Erro preventivo de migração de colunas de usuário:", e);
+  }
+
   // 1. Obter os dados cadastrais do usuário no Postgres (role, cortesia)
-  const dbUser = await db.query.users.findFirst({
+  let dbUser = await db.query.users.findFirst({
     where: eq(users.id, userId),
   });
+
+  // Sincronização Just-in-Time se o usuário do Clerk não existir no banco Postgres
+  if (!dbUser && user) {
+    const userEmail = user.emailAddresses[0]?.emailAddress;
+    if (userEmail) {
+      try {
+        const inserted = await db.insert(users).values({
+          id: userId,
+          email: userEmail,
+          name: user.firstName ? `${user.firstName} ${user.lastName || ""}`.trim() : "Usuário",
+          role: "subscriber",
+        }).returning();
+        dbUser = inserted[0];
+      } catch (insertErr) {
+        console.error("Erro no JIT Sync:", insertErr);
+      }
+    }
+  }
 
   if (!dbUser) {
     redirect('/sign-in');
@@ -106,6 +141,16 @@ export default async function AdminPage({ searchParams }: AdminPageProps) {
     // Garantia de migração de colunas e tabelas do Blog no Neon Postgres
     try {
       const { sql } = await import('drizzle-orm');
+      await db.execute(sql`
+        ALTER TABLE users 
+        ADD COLUMN IF NOT EXISTS professional_type text,
+        ADD COLUMN IF NOT EXISTS crea_crtq text,
+        ADD COLUMN IF NOT EXISTS conselho_estado text,
+        ADD COLUMN IF NOT EXISTS cpf_cnpj text,
+        ADD COLUMN IF NOT EXISTS phone text,
+        ADD COLUMN IF NOT EXISTS logo_url text,
+        ADD COLUMN IF NOT EXISTS avatar_url text;
+      `);
       await db.execute(sql`
         ALTER TABLE blog_posts 
         ADD COLUMN IF NOT EXISTS focus_keyword text,

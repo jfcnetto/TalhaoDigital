@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FileText, ArrowRight, Sparkles, Calendar, Loader2, AlertCircle } from "lucide-react";
+import { FileText, ArrowRight, Sparkles, Calendar, Loader2, AlertCircle, User, Settings } from "lucide-react";
 import Link from "next/link";
 
 interface DashboardClientProps {
@@ -145,127 +145,18 @@ export default function DashboardClient({ isPro, proType, plans, reports, subscr
         )}
 
         <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm p-6 space-y-6">
-          <div className="flex justify-between items-center border-b pb-3 border-neutral-100">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-4 border-neutral-100">
             <h2 className="font-bold text-neutral-850 text-lg flex items-center gap-2">
               <FileText className="h-5 w-5 text-emerald-800" />
               Meus Laudos & Histórico
             </h2>
-             <div className="flex items-center gap-3">
-              <Link 
-                href="/ferramentas/calagem-gessagem"
-                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
-              >
-                + Calagem
-              </Link>
-              <Link 
-                href="/ferramentas/balanceador-npk"
-                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
-              >
-                + NPK
-              </Link>
-              <Link 
-                href="/ferramentas/quebra-umidade"
-                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
-              >
-                + Umidade
-              </Link>
-              <Link 
-                href="/ferramentas/calibrador-bicos"
-                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
-              >
-                + Bicos
-              </Link>
-              <Link 
-                href="/ferramentas/mistura-tanque"
-                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
-              >
-                + Mistura
-              </Link>
-              <Link 
-                href="/ferramentas/rendimento-trator"
-                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
-              >
-                + Tratores
-              </Link>
-              <Link 
-                href="/ferramentas/depreciacao-maquinas"
-                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
-              >
-                + Custos
-              </Link>
-              <Link 
-                href="/ferramentas/conversor-gps"
-                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
-              >
-                + GPS
-              </Link>
-              <Link 
-                href="/ferramentas/perda-colheita"
-                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
-              >
-                + Perdas
-              </Link>
-              <Link 
-                href="/ferramentas/volume-silo"
-                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
-              >
-                + Silos
-              </Link>
-              <Link 
-                href="/ferramentas/conversor-unidades"
-                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
-              >
-                + Conversor
-              </Link>
-              <Link 
-                href="/ferramentas/quadrado-pearson"
-                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
-              >
-                + Pearson
-              </Link>
-              <Link 
-                href="/ferramentas/suporte-pastagem"
-                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
-              >
-                + Pastagem
-              </Link>
-              <Link 
-                href="/ferramentas/rendimento-carcaca"
-                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
-              >
-                + Carcaça
-              </Link>
-              <Link 
-                href="/ferramentas/gestacao-vacas"
-                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
-              >
-                + Gestão Vacas
-              </Link>
-              <Link 
-                href="/ferramentas/ponto-equilibrio"
-                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
-              >
-                + Ponto Equilíbrio
-              </Link>
-              <Link 
-                href="/ferramentas/simulador-barter"
-                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
-              >
-                + Barter
-              </Link>
-              <Link 
-                href="/ferramentas/planejador-compras"
-                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
-              >
-                + Compras
-              </Link>
-              <Link 
-                href="/ferramentas/transicao-organicos"
-                className="text-xs font-bold text-emerald-850 hover:text-emerald-950 inline-flex items-center gap-1 group bg-emerald-50 px-2 py-1 rounded-md"
-              >
-                + Orgânicos
-              </Link>
-            </div>
+            <Link 
+              href="/ferramentas" 
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-850 hover:text-emerald-950 font-bold text-xs rounded-xl transition-all cursor-pointer"
+            >
+              <span>Acessar Ferramentas</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
 
           {reports.length > 0 ? (
@@ -308,6 +199,27 @@ export default function DashboardClient({ isPro, proType, plans, reports, subscr
 
       {/* Coluna Lateral: Informações do Plano (4 cols) */}
       <div className="lg:col-span-4 space-y-6">
+        
+        {/* Card de Configurações de Perfil */}
+        <div className="bg-white border border-neutral-200 rounded-2xl p-6 shadow-sm space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-800 flex items-center justify-center font-bold">
+              <User className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-neutral-800 text-sm">Dados Profissionais</h3>
+              <p className="text-neutral-500 text-[10px] mt-0.5">Preencha para personalizar os laudos</p>
+            </div>
+          </div>
+          <Link
+            href="/dashboard/perfil"
+            className="w-full py-2.5 px-4 bg-emerald-800 hover:bg-emerald-950 text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors shadow-2xs cursor-pointer"
+          >
+            <Settings className="w-4 h-4" />
+            Configurar Laudo / Perfil
+          </Link>
+        </div>
+
         <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm p-6 space-y-4">
           <h3 className="font-bold text-neutral-800 text-xs uppercase tracking-wider flex items-center gap-1.5">
             <Calendar className="h-4 w-4 text-emerald-850" />

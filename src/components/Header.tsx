@@ -232,6 +232,11 @@ export default function Header() {
                     href="/admin"
                   />
                   <UserButton.Link
+                    label="Configurações de Perfil"
+                    labelIcon={<Settings className="h-4 w-4 text-emerald-800" />}
+                    href="/dashboard/perfil"
+                  />
+                  <UserButton.Link
                     label="Gerenciamento do Blog"
                     labelIcon={<BookOpen className="h-4 w-4 text-emerald-800" />}
                     href="/admin/blog"

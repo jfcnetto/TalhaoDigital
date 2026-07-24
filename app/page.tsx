@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowRight, Calculator, BarChart3, ShieldCheck, Calendar, User, BookOpen } from "lucide-react";
+import { ArrowRight, Calculator, BarChart3, ShieldCheck, Calendar, User, BookOpen, WifiOff } from "lucide-react";
+import { auth } from "@clerk/nextjs/server";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import PricingGrid from "@/components/PricingGrid";
@@ -8,6 +9,8 @@ import { plans, blogPosts } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 
 export default async function Home() {
+  const { userId } = auth();
+
   // Busca os planos ativos salvos no banco de dados (sincronizados do Stripe)
   const activePlans = await db.query.plans.findMany({
     where: eq(plans.active, true),
@@ -51,6 +54,22 @@ export default async function Home() {
                 Conhecer Planos Pro
               </Link>
             </div>
+
+            {!userId && (
+              <div className="mt-12 p-5 bg-amber-50/50 border border-amber-200/60 rounded-2xl max-w-2xl mx-auto text-left flex gap-3.5 items-start shadow-3xs animate-in fade-in duration-300">
+                <div className="p-2 bg-amber-100/70 text-amber-800 rounded-xl shrink-0">
+                  <WifiOff className="h-5 w-5" />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="font-bold text-neutral-850 text-sm">
+                    Dica para uso na Roça (Modo Offline) 🌾
+                  </h4>
+                  <p className="text-neutral-600 text-xs leading-relaxed">
+                    Para usar nossas calculadoras em áreas sem internet, certifique-se de fazer login no aplicativo pelo menos uma vez enquanto estiver conectado ao Wi-Fi ou 4G. Sua sessão ficará salva no aparelho e, quando a internet voltar, seus laudos serão sincronizados automaticamente!
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </section>
 

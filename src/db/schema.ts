@@ -7,6 +7,13 @@ export const users = pgTable('users', {
   name: text('name'),
   role: text('role', { enum: ['admin', 'subscriber'] }).default('subscriber').notNull(),
   isCourtesyPro: boolean('is_courtesy_pro').default(false).notNull(),
+  professionalType: text('professional_type'),
+  creaCrtq: text('crea_crtq'),
+  conselhoEstado: text('conselho_estado'),
+  cpfCnpj: text('cpf_cnpj'),
+  phone: text('phone'),
+  logoUrl: text('logo_url'),
+  avatarUrl: text('avatar_url'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (table) => ({

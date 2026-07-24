@@ -44,6 +44,25 @@ export default function BalanceadorNpkClient({ isPro, userName }: BalanceadorNpk
   // Identificação do Laudo
   const [responsavel, setResponsavel] = useState<string>(userName || "");
   const [cliente, setCliente] = useState<string>("");
+  const [profile, setProfile] = useState<{
+    creaCrtq?: string;
+    conselhoEstado?: string;
+    logoUrl?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (userName) {
+      fetch("/api/user/profile")
+        .then((res) => res.json())
+        .then((data) => {
+          setProfile(data);
+          if (data.name) {
+            setResponsavel(data.name);
+          }
+        })
+        .catch((err) => console.error("Erro ao buscar perfil complementar:", err));
+    }
+  }, [userName]);
 
   const [gerandoPdf, setGerandoPdf] = useState(false);
   const [showValidationError, setShowValidationError] = useState<boolean>(false);
@@ -628,13 +647,22 @@ export default function BalanceadorNpkClient({ isPro, userName }: BalanceadorNpk
             
             {/* Header do Laudo */}
             <div className="flex justify-between items-center border-b-2 border-emerald-600 pb-6 mb-8">
-              <div>
-                <h1 className="text-2xl font-black text-emerald-800 tracking-tighter">
-                  Talhão<span className="text-neutral-800">Digital</span>
-                </h1>
-                <p className="text-xs text-neutral-500 font-medium uppercase tracking-widest mt-1">
-                  Laudos e Diagnósticos Agronômicos de Precisão
-                </p>
+              <div className="flex items-center gap-4">
+                {profile?.logoUrl && (
+                  <img 
+                    src={profile.logoUrl} 
+                    alt="Logo Agrônomo" 
+                    className="h-12 w-auto object-contain max-w-[150px] mr-2" 
+                  />
+                )}
+                <div>
+                  <h1 className="text-2xl font-black text-emerald-800 tracking-tighter">
+                    Talhão<span className="text-neutral-800">Digital</span>
+                  </h1>
+                  <p className="text-xs text-neutral-500 font-medium uppercase tracking-widest mt-1">
+                    Laudos e Diagnósticos Agronômicos de Precisão
+                  </p>
+                </div>
               </div>
               <div className="text-right text-[10px] text-neutral-500">
                 <p suppressHydrationWarning><span className="font-bold text-neutral-800">Data:</span> {new Date().toLocaleDateString("pt-BR")}</p>
@@ -646,7 +674,14 @@ export default function BalanceadorNpkClient({ isPro, userName }: BalanceadorNpk
             <div className="grid grid-cols-2 gap-4 mb-8 bg-neutral-50 p-4 rounded-xl border border-neutral-200">
               <div>
                 <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mb-1">Responsável Técnico</p>
-                <p className="font-bold text-neutral-800 text-sm uppercase">{responsavel || "Não informado"}</p>
+                <p className="font-bold text-neutral-800 text-sm uppercase flex flex-col">
+                  <span>{responsavel || "Não informado"}</span>
+                  {profile?.creaCrtq && (
+                    <span className="text-[10px] text-neutral-500 font-bold tracking-normal mt-0.5 normal-case">
+                      CREA/CRTQ: {profile.creaCrtq}/{profile.conselhoEstado}
+                    </span>
+                  )}
+                </p>
               </div>
               <div>
                 <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mb-1">Produtor / Cliente</p>

@@ -22,6 +22,25 @@ export default function QuebraUmidadeClient({ isPro = false, userName }: { isPro
   const [produtor, setProdutor] = useState<string>("");
   const [responsavelTecnico, setResponsavelTecnico] = useState<string>(userName || "");
   const [showValidationError, setShowValidationError] = useState<boolean>(false);
+  const [profile, setProfile] = useState<{
+    creaCrtq?: string;
+    conselhoEstado?: string;
+    logoUrl?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (userName) {
+      fetch("/api/user/profile")
+        .then((res) => res.json())
+        .then((data) => {
+          setProfile(data);
+          if (data.name) {
+            setResponsavelTecnico(data.name);
+          }
+        })
+        .catch((err) => console.error("Erro ao buscar perfil complementar:", err));
+    }
+  }, [userName]);
 
   const reportRef = useRef<HTMLDivElement>(null);
 
@@ -554,13 +573,22 @@ export default function QuebraUmidadeClient({ isPro = false, userName }: { isPro
             
             {/* Topo do Laudo / Cabeçalho com Espaço Adicional (Ajustado) */}
             <div className="flex justify-between items-center border-b pb-6 border-neutral-200">
-              <div className="space-y-2">
-                <span className="text-3xl font-extrabold text-emerald-850 tracking-tight block">
-                  Talhão<span className="text-emerald-600">Digital</span>
-                </span>
-                <span className="text-xs text-neutral-400 block mt-2">
-                  Laudos e Diagnósticos Agronômicos de Precisão
-                </span>
+              <div className="flex items-center gap-4">
+                {profile?.logoUrl && (
+                  <img 
+                    src={profile.logoUrl} 
+                    alt="Logo Agrônomo" 
+                    className="h-12 w-auto object-contain max-w-[150px] mr-2" 
+                  />
+                )}
+                <div className="space-y-2">
+                  <span className="text-3xl font-extrabold text-emerald-855 tracking-tight block">
+                    Talhão<span className="text-emerald-600">Digital</span>
+                  </span>
+                  <span className="text-xs text-neutral-400 block mt-2">
+                    Laudos e Diagnósticos Agronômicos de Precisão
+                  </span>
+                </div>
               </div>
               <div className="text-right text-xs text-neutral-500">
                 <span className="block font-bold">Relatório Técnico Digital</span>
@@ -572,7 +600,14 @@ export default function QuebraUmidadeClient({ isPro = false, userName }: { isPro
             <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-100 grid grid-cols-2 gap-4 text-xs">
               <div>
                 <span className="text-neutral-400 block font-semibold uppercase">Responsável Técnico</span>
-                <span className="text-sm font-bold text-neutral-800 mt-0.5 block">{responsavelTecnico}</span>
+                <span className="text-sm font-bold text-neutral-800 mt-0.5 block flex flex-col">
+                  <span>{responsavelTecnico}</span>
+                  {profile?.creaCrtq && (
+                    <span className="text-[10px] text-neutral-500 font-bold tracking-normal mt-0.5 normal-case">
+                      CREA/CRTQ: {profile.creaCrtq}/{profile.conselhoEstado}
+                    </span>
+                  )}
+                </span>
               </div>
               <div>
                 <span className="text-neutral-400 block font-semibold uppercase">Produtor / Cliente</span>

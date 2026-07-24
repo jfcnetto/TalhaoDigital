@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { FileText, ArrowRight, Sparkles, Calendar, Loader2, AlertCircle, User, Settings } from "lucide-react";
+import { FileText, ArrowRight, Sparkles, Calendar, Loader2, AlertCircle, User, Settings, CreditCard } from "lucide-react";
 import Link from "next/link";
 
 interface DashboardClientProps {
@@ -18,6 +18,11 @@ export default function DashboardClient({ isPro, proType, plans, reports, subscr
   const [selectedInterval, setSelectedInterval] = useState<"month" | "quarter" | "semester">("month");
   const [showSuccessToast, setShowSuccessToast] = useState(false);
 
+  // Histórico de Faturas & Portal
+  const [invoices, setInvoices] = useState<any[]>([]);
+  const [loadingInvoices, setLoadingInvoices] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
+
   // Verificar se acabou de retornar de um pagamento do Stripe
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -27,6 +32,22 @@ export default function DashboardClient({ isPro, proType, plans, reports, subscr
       }
     }
   }, []);
+
+  // Buscar faturas se for usuário Stripe
+  useEffect(() => {
+    if (isPro && proType === 'stripe') {
+      setLoadingInvoices(true);
+      fetch('/api/stripe/invoices')
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            setInvoices(data);
+          }
+        })
+        .catch(err => console.error('Erro ao buscar faturas:', err))
+        .finally(() => setLoadingInvoices(false));
+    }
+  }, [isPro, proType]);
 
   // Iniciar sessão de Checkout do Stripe
   const handleSubscribe = async (priceId: string) => {
@@ -45,6 +66,26 @@ export default function DashboardClient({ isPro, proType, plans, reports, subscr
       setError(err.message);
     } finally {
       setLoadingPlan(null);
+    }
+  };
+
+  // Redirecionar para o Portal do Cliente Stripe
+  const handleManageSubscription = async () => {
+    setPortalLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/stripe/portal", {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erro ao redirecionar para o portal");
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setPortalLoading(false);
     }
   };
 
@@ -195,6 +236,84 @@ export default function DashboardClient({ isPro, proType, plans, reports, subscr
             </div>
           )}
         </div>
+
+        {/* Histórico de Faturas (Exclusivo Pro Stripe) */}
+        {isPro && proType === 'stripe' && (
+          <div className="bg-white border border-neutral-200 rounded-2xl shadow-sm p-6 space-y-4">
+            <h2 className="font-bold text-neutral-850 text-base flex items-center gap-2 border-b pb-4 border-neutral-100">
+              <CreditCard className="h-4 w-4 text-emerald-800" />
+              Histórico de Pagamentos & Recibos
+            </h2>
+
+            {loadingInvoices ? (
+              <div className="flex justify-center py-6">
+                <Loader2 className="h-5 w-5 animate-spin text-emerald-800" />
+              </div>
+            ) : invoices.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="border-b border-neutral-100 text-neutral-500 font-bold">
+                      <th className="py-2.5">Data</th>
+                      <th className="py-2.5">Fatura</th>
+                      <th className="py-2.5">Valor</th>
+                      <th className="py-2.5">Status</th>
+                      <th className="py-2.5 text-right">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-100 text-neutral-600">
+                    {invoices.map((inv) => (
+                      <tr key={inv.id} className="hover:bg-neutral-50/50">
+                        <td className="py-2.5">
+                          {new Date(inv.created * 1000).toLocaleDateString("pt-BR")}
+                        </td>
+                        <td className="py-2.5 font-medium">{inv.number}</td>
+                        <td className="py-2.5 font-bold">
+                          {(inv.total / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                        </td>
+                        <td className="py-2.5">
+                          <span className={`inline-block px-2 py-0.5 rounded-lg text-[10px] font-bold ${
+                            inv.status === 'paid' 
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' 
+                              : 'bg-amber-50 text-amber-750 border border-amber-100'
+                          }`}>
+                            {inv.status === 'paid' ? 'Pago' : inv.status}
+                          </span>
+                        </td>
+                        <td className="py-2.5 text-right space-x-2">
+                          {inv.pdfUrl && (
+                            <a 
+                              href={inv.pdfUrl} 
+                              target="_blank" 
+                              rel="noreferrer"
+                              className="text-emerald-850 hover:text-emerald-950 font-bold hover:underline transition-colors"
+                            >
+                              PDF
+                            </a>
+                          )}
+                          {inv.hostedInvoiceUrl && (
+                            <a 
+                              href={inv.hostedInvoiceUrl} 
+                              target="_blank" 
+                              rel="noreferrer"
+                              className="text-neutral-500 hover:text-neutral-700 hover:underline transition-colors"
+                            >
+                              Visualizar
+                            </a>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-xs text-neutral-400 text-center py-4">
+                Nenhuma fatura encontrada.
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Coluna Lateral: Informações do Plano (4 cols) */}
@@ -264,6 +383,21 @@ export default function DashboardClient({ isPro, proType, plans, reports, subscr
                   </div>
                 )}
               </div>
+
+              {proType === 'stripe' && (
+                <button
+                  onClick={handleManageSubscription}
+                  disabled={portalLoading}
+                  className="w-full inline-flex items-center justify-center gap-1.5 py-2.5 px-4 border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-850 hover:text-emerald-950 font-bold text-xs rounded-xl transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {portalLoading ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Settings className="w-3.5 h-3.5" />
+                  )}
+                  Gerenciar Assinatura (Portal Stripe)
+                </button>
+              )}
             </div>
           ) : (
             <div className="space-y-4">

@@ -17,14 +17,19 @@ export async function GET() {
       where: eq(users.id, userId),
     });
 
-    // Se o usuário for Admin no Clerk ou no Postgres, é sempre Admin
+    const userEmail = user.emailAddresses[0]?.emailAddress?.toLowerCase();
+    const isDefaultAdmin = userEmail === 'jfcnetto@gmail.com';
+
+    // Se o usuário for Admin no Clerk ou no Postgres, ou for o e-mail de criador padrão
     const isAdmin = 
       user.publicMetadata?.role === 'admin' || 
-      dbUser?.role === 'admin';
+      dbUser?.role === 'admin' ||
+      isDefaultAdmin;
 
-    // Garante que se for admin no Clerk, sincroniza com o Postgres
+    // Garante que sincroniza com o Postgres
     if (isAdmin && dbUser && dbUser.role !== 'admin') {
       await db.update(users).set({ role: 'admin' }).where(eq(users.id, userId));
+      dbUser.role = 'admin';
     }
 
     const activeSub = await db.query.subscriptions.findFirst({

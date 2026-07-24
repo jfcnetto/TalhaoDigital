@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { UserButton, SignedIn, SignedOut, useUser } from "@clerk/nextjs";
-import { ChevronDown, Wheat, Sprout, Settings, ShieldCheck, BookOpen, Warehouse, Scale, Dna, TrendingUp, Calendar, Coins, PiggyBank, Leaf, Lock } from "lucide-react";
+import { ChevronDown, Wheat, Sprout, Settings, ShieldCheck, BookOpen, Warehouse, Scale, Dna, TrendingUp, Calendar, Coins, PiggyBank, Leaf, Lock, User } from "lucide-react";
 import { calculadoras } from "@/lib/calculadoras";
 
 const iconsMap: Record<string, React.ComponentType<any>> = {
@@ -224,23 +224,32 @@ export default function Header() {
           <SignedIn>
             {/* Bloco do Avatar com o Badge Verdinho do Plano Pro centralizado diretamente abaixo dele */}
             <div className="flex flex-col items-center justify-center gap-1">
-              <UserButton afterSignOutUrl="/">
+              <UserButton key={userStatus ? userStatus.role : 'loading'} afterSignOutUrl="/">
                 <UserButton.MenuItems>
+                  {userStatus?.role === 'admin' && (
+                    <UserButton.Link
+                      label="Painel Administrativo"
+                      labelIcon={<ShieldCheck className="h-4 w-4 text-emerald-800" />}
+                      href="/admin"
+                    />
+                  )}
                   <UserButton.Link
-                    label="Painel Administrativo"
-                    labelIcon={<ShieldCheck className="h-4 w-4 text-emerald-800" />}
-                    href="/admin"
+                    label="Painel do Profissional"
+                    labelIcon={<User className="h-4 w-4 text-emerald-800" />}
+                    href="/dashboard"
                   />
                   <UserButton.Link
                     label="Configurações de Perfil"
                     labelIcon={<Settings className="h-4 w-4 text-emerald-800" />}
                     href="/dashboard/perfil"
                   />
-                  <UserButton.Link
-                    label="Gerenciamento do Blog"
-                    labelIcon={<BookOpen className="h-4 w-4 text-emerald-800" />}
-                    href="/admin/blog"
-                  />
+                  {userStatus?.role === 'admin' && (
+                    <UserButton.Link
+                      label="Gerenciamento do Blog"
+                      labelIcon={<BookOpen className="h-4 w-4 text-emerald-800" />}
+                      href="/admin/blog"
+                    />
+                  )}
                 </UserButton.MenuItems>
               </UserButton>
 

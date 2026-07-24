@@ -101,6 +101,35 @@ export async function POST(req: Request) {
           .where(eq(subscriptions.id, subscription.id));
 
         console.log(`Subscription updated in Stripe: ${subscription.id}`);
+
+        // Disparar e-mail se a assinatura entrar em atraso (past_due)
+        if (subscription.status === 'past_due') {
+          try {
+            const localSub = await db.query.subscriptions.findFirst({
+              where: eq(subscriptions.id, subscription.id),
+            });
+            if (localSub) {
+              const user = await db.query.users.findFirst({
+                where: eq(users.id, localSub.userId),
+              });
+              if (user) {
+                const { sendBillingRecoveryEmail } = await import('@/lib/emails');
+                const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://talhaodigital.com.br';
+                
+                await sendBillingRecoveryEmail({
+                  userId: user.id,
+                  email: user.email,
+                  name: user.name || 'Assinante',
+                  type: 'past_due_warning',
+                  paymentUrl: `${origin}/dashboard`,
+                  amount: subscription.items.data[0]?.price?.unit_amount || 3990,
+                });
+              }
+            }
+          } catch (err) {
+            console.error('Erro ao processar e-mail de past_due no webhook:', err);
+          }
+        }
         break;
       }
 
@@ -117,6 +146,41 @@ export async function POST(req: Request) {
           .where(eq(subscriptions.id, subscription.id));
 
         console.log(`Subscription deleted/canceled: ${subscription.id}`);
+        break;
+      }
+
+      // 5. Tentativa de pagamento de fatura falhou
+      case 'invoice.payment_failed': {
+        const invoice = event.data.object as Stripe.Invoice;
+        const customerId = invoice.customer as string;
+
+        if (customerId) {
+          try {
+            const localSub = await db.query.subscriptions.findFirst({
+              where: eq(subscriptions.stripeCustomerId, customerId),
+            });
+            if (localSub) {
+              const user = await db.query.users.findFirst({
+                where: eq(users.id, localSub.userId),
+              });
+              if (user) {
+                const { sendBillingRecoveryEmail } = await import('@/lib/emails');
+                const origin = process.env.NEXT_PUBLIC_APP_URL || 'https://talhaodigital.com.br';
+                
+                await sendBillingRecoveryEmail({
+                  userId: user.id,
+                  email: user.email,
+                  name: user.name || 'Assinante',
+                  type: 'payment_failed',
+                  paymentUrl: `${origin}/dashboard`,
+                  amount: invoice.amount_due || 3990,
+                });
+              }
+            }
+          } catch (err) {
+            console.error('Erro ao processar e-mail de falha de pagamento no webhook:', err);
+          }
+        }
         break;
       }
     }

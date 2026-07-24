@@ -175,3 +175,24 @@ export const toolUsageEvents = pgTable('tool_usage_events', {
 }, (table) => ({
   toolIdIdx: index('tool_usage_idx').on(table.toolId),
 }));
+
+// 15. Logs de Recuperação de Inadimplência (E-mails de cobrança)
+export const billingRecoveryLogs = pgTable('billing_recovery_logs', {
+  id: serial('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  email: text('email').notNull(),
+  type: text('type').notNull(), // 'payment_failed' | 'past_due_warning' | 'manual_test'
+  status: text('status').notNull(), // 'sent' | 'failed' | 'simulated'
+  previewUrl: text('preview_url'), // Link do Ethereal para ver o e-mail de teste enviado
+  sentAt: timestamp('sent_at').defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index('billing_recovery_user_idx').on(table.userId),
+}));
+
+// 16. Configurações Globais do Sistema (SMTP, chaves de email, etc)
+export const appSettings = pgTable('app_settings', {
+  id: text('id').primaryKey(), // ex: 'smtp_config'
+  value: jsonb('value').notNull(), // Objeto JSON contendo as chaves configuradas
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});

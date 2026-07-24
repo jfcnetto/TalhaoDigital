@@ -3,7 +3,22 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { UserButton, SignedIn, SignedOut, useUser } from "@clerk/nextjs";
-import { ChevronDown, Wheat, Sprout, Settings, ShieldCheck, BookOpen, Warehouse, Scale, Dna, TrendingUp, Calendar, Coins, PiggyBank, Leaf } from "lucide-react";
+import { ChevronDown, Wheat, Sprout, Settings, ShieldCheck, BookOpen, Warehouse, Scale, Dna, TrendingUp, Calendar, Coins, PiggyBank, Leaf, Lock } from "lucide-react";
+import { calculadoras } from "@/lib/calculadoras";
+
+const iconsMap: Record<string, React.ComponentType<any>> = {
+  Sprout,
+  Settings,
+  Wheat,
+  Scale,
+  Warehouse,
+  Dna,
+  TrendingUp,
+  Calendar,
+  Coins,
+  PiggyBank,
+  Leaf,
+};
 
 export default function Header() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -58,131 +73,45 @@ export default function Header() {
                         Agricultura
                       </span>
                       
-                      <Link 
-                        href="/ferramentas/calagem-gessagem"
-                        className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-emerald-50/50 transition-colors group"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
-                          <Sprout className="h-3.5 w-3.5" />
-                        </div>
-                        <div>
-                          <span className="font-bold text-[11px] text-neutral-850 block">Calagem e Gessagem</span>
-                          <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">Saturação por bases V%</span>
-                        </div>
-                      </Link>
+                      {calculadoras
+                        .filter((c) => c.categoria === "Agricultura")
+                        .map((calc) => {
+                          const isProCalc = calc.plano === "Pro";
+                          const hasAccess = isSignedIn && (!isProCalc || userStatus?.isPro === true);
+                          const IconComponent = iconsMap[calc.iconName] || Settings;
 
-                      <Link 
-                        href="/ferramentas/balanceador-npk"
-                        className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-emerald-50/50 transition-colors group"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
-                          <Settings className="h-3.5 w-3.5" />
-                        </div>
-                        <div>
-                          <span className="font-bold text-[11px] text-neutral-850 block">Balanceador NPK</span>
-                          <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">Mistura de formulações</span>
-                        </div>
-                      </Link>
-
-                      <Link 
-                        href="/ferramentas/calibrador-bicos"
-                        className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-emerald-50/50 transition-colors group"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
-                          <Settings className="h-3.5 w-3.5" />
-                        </div>
-                        <div>
-                          <span className="font-bold text-[11px] text-neutral-850 block">Calibração de Bicos</span>
-                          <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">Vazão real (L/min)</span>
-                        </div>
-                      </Link>
-
-                      <Link 
-                        href="/ferramentas/mistura-tanque"
-                        className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-emerald-50/50 transition-colors group"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
-                          <Settings className="h-3.5 w-3.5" />
-                        </div>
-                        <div>
-                          <span className="font-bold text-[11px] text-neutral-850 block">Mistura de Tanque</span>
-                          <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">Ordem e compatibilidade</span>
-                        </div>
-                      </Link>
-
-                      <Link 
-                        href="/ferramentas/quebra-umidade"
-                        className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-emerald-50/50 transition-colors group"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
-                          <Wheat className="h-3.5 w-3.5" />
-                        </div>
-                        <div>
-                          <span className="font-bold text-[11px] text-neutral-850 block">Quebra de Umidade</span>
-                          <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">Desconto comercial</span>
-                        </div>
-                      </Link>
-
-                      <Link 
-                        href="/ferramentas/rendimento-trator"
-                        className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-emerald-50/50 transition-colors group"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
-                          <Settings className="h-3.5 w-3.5" />
-                        </div>
-                        <div>
-                          <span className="font-bold text-[11px] text-neutral-850 block">Rendimento de Trator</span>
-                          <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">Campo e tempo (ha/h)</span>
-                        </div>
-                      </Link>
-
-                      <Link 
-                        href="/ferramentas/perda-colheita"
-                        className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-emerald-50/50 transition-colors group"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
-                          <Wheat className="h-3.5 w-3.5" />
-                        </div>
-                        <div>
-                          <span className="font-bold text-[11px] text-neutral-850 block">Perda na Colheita</span>
-                          <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">Amostragem Soja/Milho</span>
-                        </div>
-                      </Link>
-
-                      <Link 
-                        href="/ferramentas/conversor-gps"
-                        className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-emerald-50/50 transition-colors group"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
-                          <Settings className="h-3.5 w-3.5" />
-                        </div>
-                        <div>
-                          <span className="font-bold text-[11px] text-neutral-850 block">Conversor de GPS</span>
-                          <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">KML/GPX para Shapefile</span>
-                        </div>
-                      </Link>
-
-                      <Link 
-                        href="/ferramentas/conversor-unidades"
-                        className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-emerald-50/50 transition-colors group"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
-                          <Scale className="h-3.5 w-3.5" />
-                        </div>
-                        <div>
-                          <span className="font-bold text-[11px] text-neutral-850 block">Conversor de Unidades</span>
-                          <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">Alqueires, Bushels e Pesos</span>
-                        </div>
-                      </Link>
+                          return (
+                            <Link 
+                              key={calc.slug}
+                              href={hasAccess ? `/ferramentas/${calc.slug}` : "#"}
+                              className={`flex items-start justify-between gap-2.5 p-2 rounded-xl transition-colors group relative ${
+                                hasAccess 
+                                  ? "hover:bg-emerald-50/50" 
+                                  : "opacity-40 cursor-not-allowed select-none pointer-events-none"
+                              }`}
+                              onClick={(e) => {
+                                if (!hasAccess) {
+                                  e.preventDefault();
+                                  return;
+                                }
+                                setDropdownOpen(false);
+                              }}
+                            >
+                              <div className="flex items-start gap-2.5">
+                                <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
+                                  <IconComponent className="h-3.5 w-3.5" />
+                                </div>
+                                <div>
+                                  <span className="font-bold text-[11px] text-neutral-850 block">{calc.nome}</span>
+                                  <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">{calc.descricaoCurta}</span>
+                                </div>
+                              </div>
+                              {!hasAccess && (
+                                <Lock className="h-3 w-3 text-neutral-400 shrink-0 mt-1 self-start" />
+                              )}
+                            </Link>
+                          );
+                        })}
                     </div>
 
                     {/* Categoria 2: Pecuária */}
@@ -191,75 +120,45 @@ export default function Header() {
                         Pecuária
                       </span>
 
-                      <Link 
-                        href="/ferramentas/volume-silo"
-                        className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-emerald-50/50 transition-colors group"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
-                          <Warehouse className="h-3.5 w-3.5" />
-                        </div>
-                        <div>
-                          <span className="font-bold text-[11px] text-neutral-850 block">Volume de Silo</span>
-                          <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">Trincheira, Encosto e Bolsa</span>
-                        </div>
-                      </Link>
+                      {calculadoras
+                        .filter((c) => c.categoria === "Pecuária")
+                        .map((calc) => {
+                          const isProCalc = calc.plano === "Pro";
+                          const hasAccess = isSignedIn && (!isProCalc || userStatus?.isPro === true);
+                          const IconComponent = iconsMap[calc.iconName] || Settings;
 
-                      <Link 
-                        href="/ferramentas/quadrado-pearson"
-                        className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-emerald-50/50 transition-colors group"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
-                          <Dna className="h-3.5 w-3.5" />
-                        </div>
-                        <div>
-                          <span className="font-bold text-[11px] text-neutral-850 block">Balanceador (Pearson)</span>
-                          <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">% Proteína Bruta da Ração</span>
-                        </div>
-                      </Link>
-
-                      <Link 
-                        href="/ferramentas/suporte-pastagem"
-                        className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-emerald-50/50 transition-colors group"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
-                          <Sprout className="h-3.5 w-3.5" />
-                        </div>
-                        <div>
-                          <span className="font-bold text-[11px] text-neutral-850 block">Suporte de Pastagem</span>
-                          <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">Capacidade de Lotação (UA/ha)</span>
-                        </div>
-                      </Link>
-
-                      <Link 
-                        href="/ferramentas/rendimento-carcaca"
-                        className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-emerald-50/50 transition-colors group"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
-                          <TrendingUp className="h-3.5 w-3.5" />
-                        </div>
-                        <div>
-                          <span className="font-bold text-[11px] text-neutral-850 block">Rendimento de Carcaça</span>
-                          <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">Peso de Carcaça e Valor @</span>
-                        </div>
-                      </Link>
-
-                      <Link 
-                        href="/ferramentas/gestacao-vacas"
-                        className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-emerald-50/50 transition-colors group"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
-                          <Calendar className="h-3.5 w-3.5" />
-                        </div>
-                        <div>
-                          <span className="font-bold text-[11px] text-neutral-850 block">Gestão Gestacional Vacas</span>
-                          <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">Previsão de Parto e Secagem</span>
-                        </div>
-                      </Link>
+                          return (
+                            <Link 
+                              key={calc.slug}
+                              href={hasAccess ? `/ferramentas/${calc.slug}` : "#"}
+                              className={`flex items-start justify-between gap-2.5 p-2 rounded-xl transition-colors group relative ${
+                                hasAccess 
+                                  ? "hover:bg-emerald-50/50" 
+                                  : "opacity-40 cursor-not-allowed select-none pointer-events-none"
+                              }`}
+                              onClick={(e) => {
+                                if (!hasAccess) {
+                                  e.preventDefault();
+                                  return;
+                                }
+                                setDropdownOpen(false);
+                              }}
+                            >
+                              <div className="flex items-start gap-2.5">
+                                <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
+                                  <IconComponent className="h-3.5 w-3.5" />
+                                </div>
+                                <div>
+                                  <span className="font-bold text-[11px] text-neutral-850 block">{calc.nome}</span>
+                                  <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">{calc.descricaoCurta}</span>
+                                </div>
+                              </div>
+                              {!hasAccess && (
+                                <Lock className="h-3 w-3 text-neutral-400 shrink-0 mt-1 self-start" />
+                              )}
+                            </Link>
+                          );
+                        })}
                     </div>
 
                     {/* Categoria 3: Gestão Financeira */}
@@ -268,75 +167,45 @@ export default function Header() {
                         Gestão Financeira
                       </span>
 
-                      <Link 
-                        href="/ferramentas/depreciacao-maquinas"
-                        className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-emerald-50/50 transition-colors group"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
-                          <Settings className="h-3.5 w-3.5" />
-                        </div>
-                        <div>
-                          <span className="font-bold text-[11px] text-neutral-850 block">Depreciação de Máquinas</span>
-                          <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">Custo horário e linear</span>
-                        </div>
-                      </Link>
+                      {calculadoras
+                        .filter((c) => c.categoria === "Financeiro")
+                        .map((calc) => {
+                          const isProCalc = calc.plano === "Pro";
+                          const hasAccess = isSignedIn && (!isProCalc || userStatus?.isPro === true);
+                          const IconComponent = iconsMap[calc.iconName] || Settings;
 
-                      <Link 
-                        href="/ferramentas/ponto-equilibrio"
-                        className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-emerald-50/50 transition-colors group"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
-                          <Scale className="h-3.5 w-3.5" />
-                        </div>
-                        <div>
-                          <span className="font-bold text-[11px] text-neutral-850 block">Ponto de Equilíbrio</span>
-                          <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">Margem por ha e sacas/ha</span>
-                        </div>
-                      </Link>
-
-                      <Link 
-                        href="/ferramentas/simulador-barter"
-                        className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-emerald-50/50 transition-colors group"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
-                          <Coins className="h-3.5 w-3.5" />
-                        </div>
-                        <div>
-                          <span className="font-bold text-[11px] text-neutral-850 block">Simulador de Barter</span>
-                          <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">Troca de grãos por insumos</span>
-                        </div>
-                      </Link>
-
-                      <Link 
-                        href="/ferramentas/planejador-compras"
-                        className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-emerald-50/50 transition-colors group"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
-                          <PiggyBank className="h-3.5 w-3.5" />
-                        </div>
-                        <div>
-                          <span className="font-bold text-[11px] text-neutral-850 block">Planejador de Compras</span>
-                          <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">À vista vs. Prazo e CDI</span>
-                        </div>
-                      </Link>
-
-                      <Link 
-                        href="/ferramentas/transicao-organicos"
-                        className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-emerald-50/50 transition-colors group"
-                        onClick={() => setDropdownOpen(false)}
-                      >
-                        <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
-                          <Leaf className="h-3.5 w-3.5" />
-                        </div>
-                        <div>
-                          <span className="font-bold text-[11px] text-neutral-850 block">Transição Orgânica</span>
-                          <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">Viabilidade e conversão</span>
-                        </div>
-                      </Link>
+                          return (
+                            <Link 
+                              key={calc.slug}
+                              href={hasAccess ? `/ferramentas/${calc.slug}` : "#"}
+                              className={`flex items-start justify-between gap-2.5 p-2 rounded-xl transition-colors group relative ${
+                                hasAccess 
+                                  ? "hover:bg-emerald-50/50" 
+                                  : "opacity-40 cursor-not-allowed select-none pointer-events-none"
+                              }`}
+                              onClick={(e) => {
+                                if (!hasAccess) {
+                                  e.preventDefault();
+                                  return;
+                                }
+                                setDropdownOpen(false);
+                              }}
+                            >
+                              <div className="flex items-start gap-2.5">
+                                <div className="p-1.5 bg-emerald-50 text-emerald-850 rounded-lg group-hover:bg-emerald-100/70 transition-colors shrink-0">
+                                  <IconComponent className="h-3.5 w-3.5" />
+                                </div>
+                                <div>
+                                  <span className="font-bold text-[11px] text-neutral-850 block">{calc.nome}</span>
+                                  <span className="text-[9.5px] text-neutral-500 block mt-0.5 leading-snug">{calc.descricaoCurta}</span>
+                                </div>
+                              </div>
+                              {!hasAccess && (
+                                <Lock className="h-3 w-3 text-neutral-400 shrink-0 mt-1 self-start" />
+                              )}
+                            </Link>
+                          );
+                        })}
                     </div>
                   </div>
                </div>

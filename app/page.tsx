@@ -38,7 +38,7 @@ export default async function Home() {
             </p>
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
-                href="/ferramentas/quebra-umidade"
+                href="/ferramentas"
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-800 px-6 py-3.5 text-base font-bold text-white shadow-lg shadow-emerald-900/10 hover:bg-emerald-900 hover:shadow-xl transition-all duration-200"
               >
                 Ver Calculadoras

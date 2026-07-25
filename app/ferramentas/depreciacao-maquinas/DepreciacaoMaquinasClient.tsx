@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Printer, Lock, Download, Info, HelpCircle } from "lucide-react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { ArrowLeft, Printer, Lock, Download, Info, HelpCircle, Save, Share2 } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import ShareButton from "@/components/ShareButton";
 
 interface DepreciacaoMaquinasClientProps {
   isPro: boolean;
@@ -14,23 +16,121 @@ interface DepreciacaoMaquinasClientProps {
 }
 
 export default function DepreciacaoMaquinasClient({ isPro, userName }: DepreciacaoMaquinasClientProps) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const reportId = searchParams.get('reportId');
+  const autoDownload = searchParams.get('autoDownload');
+
+  // Loading state para salvar
+  const [loadingSave, setLoadingSave] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
+  const initialInputsRef = useRef<any>(null);
+
   // Parâmetros de Aquisição e Operação
-  const [valorNovo, setValorNovo] = useState<number>(450000); // R$ (Valor de aquisição da máquina)
-  const [vidaUtilAnos, setVidaUtilAnos] = useState<number>(10); // Anos (Vida útil estimada)
-  const [horasUsoAno, setHorasUsoAno] = useState<number>(800); // horas/ano (Horas estimadas de uso anual)
-  const [valorResidualPct, setValorResidualPct] = useState<number>(20); // % (Valor residual no fim da vida útil)
+  const [valorNovo, setValorNovo] = useState<number>(450000);
+  const [vidaUtilAnos, setVidaUtilAnos] = useState<number>(10);
+  const [horasUsoAno, setHorasUsoAno] = useState<number>(800);
+  const [valorResidualPct, setValorResidualPct] = useState<number>(20);
 
   // Custos Operacionais e Manutenção
-  const [combustivelHora, setCombustivelHora] = useState<number>(65); // R$/hora (Gasto estimado de combustível por hora)
-  const [manutencaoPct, setManutencaoPct] = useState<number>(5); // % (Percentual do valor novo para manutenção anual)
-  const [operadorHora, setOperadorHora] = useState<number>(25); // R$/hora (Salário + encargos do operador por hora)
+  const [combustivelHora, setCombustivelHora] = useState<number>(65);
+  const [manutencaoPct, setManutencaoPct] = useState<number>(5);
+  const [operadorHora, setOperadorHora] = useState<number>(25);
 
   // Identificação do Laudo
   const [responsavel, setResponsavel] = useState<string>(userName || "");
   const [cliente, setCliente] = useState<string>("");
+  const [propriedade, setPropriedade] = useState<string>("");
+  const [nomeLaudo, setNomeLaudo] = useState<string>("");
+  const [profile, setProfile] = useState<{
+    creaCrtq?: string;
+    conselhoEstado?: string;
+    logoUrl?: string;
+  } | null>(null);
 
   const [gerandoPdf, setGerandoPdf] = useState(false);
   const [showValidationError, setShowValidationError] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (userName) {
+      fetch("/api/user/profile")
+        .then((res) => res.json())
+        .then((data) => {
+          setProfile(data);
+          if (data.name) setResponsavel(data.name);
+        })
+        .catch((err) => console.error("Erro ao buscar perfil complementar:", err));
+    }
+  }, [userName]);
+
+  // Carregar dados de um laudo antigo (Reabrir / Duplicar)
+  useEffect(() => {
+    if (reportId) {
+      fetch(`/api/reports/${reportId}`)
+        .then((res) => { if (!res.ok) throw new Error("Erro ao carregar"); return res.json(); })
+        .then((data) => {
+          if (data && data.inputs && data.clientData) {
+            setValorNovo(Number(data.inputs.valorNovo || 450000));
+            setVidaUtilAnos(Number(data.inputs.vidaUtilAnos || 10));
+            setHorasUsoAno(Number(data.inputs.horasUsoAno || 800));
+            setValorResidualPct(Number(data.inputs.valorResidualPct || 20));
+            setCombustivelHora(Number(data.inputs.combustivelHora || 65));
+            setManutencaoPct(Number(data.inputs.manutencaoPct || 5));
+            setOperadorHora(Number(data.inputs.operadorHora || 25));
+            setCliente(data.clientData.cliente || "");
+            setPropriedade(data.clientData.propriedade || "");
+            setNomeLaudo(data.clientData.nomeLaudo || "");
+            if (data.professionalData?.responsavel) setResponsavel(data.professionalData.responsavel);
+            initialInputsRef.current = {
+              valorNovo: Number(data.inputs.valorNovo || 450000),
+              vidaUtilAnos: Number(data.inputs.vidaUtilAnos || 10),
+              horasUsoAno: Number(data.inputs.horasUsoAno || 800),
+              valorResidualPct: Number(data.inputs.valorResidualPct || 20),
+              combustivelHora: Number(data.inputs.combustivelHora || 65),
+              manutencaoPct: Number(data.inputs.manutencaoPct || 5),
+              operadorHora: Number(data.inputs.operadorHora || 25),
+              cliente: data.clientData.cliente || "",
+              propriedade: data.clientData.propriedade || "",
+              nomeLaudo: data.clientData.nomeLaudo || ""
+            };
+            setIsSaved(true);
+          }
+        })
+        .catch((err) => console.error("Erro ao carregar laudo do histórico:", err));
+    }
+  }, [reportId]);
+
+  // Monitorar alterações para invalidar status de salvo
+  useEffect(() => {
+    if (initialInputsRef.current) {
+      const isDifferent =
+        valorNovo !== initialInputsRef.current.valorNovo ||
+        vidaUtilAnos !== initialInputsRef.current.vidaUtilAnos ||
+        horasUsoAno !== initialInputsRef.current.horasUsoAno ||
+        valorResidualPct !== initialInputsRef.current.valorResidualPct ||
+        combustivelHora !== initialInputsRef.current.combustivelHora ||
+        manutencaoPct !== initialInputsRef.current.manutencaoPct ||
+        operadorHora !== initialInputsRef.current.operadorHora ||
+        cliente !== initialInputsRef.current.cliente ||
+        propriedade !== initialInputsRef.current.propriedade ||
+        nomeLaudo !== initialInputsRef.current.nomeLaudo;
+      if (isDifferent) { setIsSaved(false); initialInputsRef.current = null; }
+    } else { setIsSaved(false); }
+  }, [valorNovo, vidaUtilAnos, horasUsoAno, valorResidualPct, combustivelHora, manutencaoPct, operadorHora, cliente, propriedade, nomeLaudo]);
+
+  // Proteção Anti-PrintScreen
+  useEffect(() => {
+    if (isPro) return;
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === "PrintScreen") {
+        try { navigator.clipboard?.writeText(""); } catch (err) {}
+        alert("🔒 A captura de tela deste relatório é bloqueada no Plano Gratuito. Assine o Plano Pro!");
+      }
+    };
+    window.addEventListener("keyup", handleKeyUp);
+    return () => window.removeEventListener("keyup", handleKeyUp);
+  }, [isPro]);
 
   // --- Memória de Cálculo Agronômico / Gestão ---
   // 1. Valor Residual (R$):
@@ -59,56 +159,88 @@ export default function DepreciacaoMaquinasClient({ isPro, userName }: Depreciac
   const pctFixo = Math.round((custoFixoHora / totalCustoEx) * 100);
   const pctVariavel = 100 - pctFixo;
 
-  const isFormValid = responsavel.trim() !== "" && cliente.trim() !== "";
+  const isFormValid = responsavel.trim() !== "" && cliente.trim() !== "" && propriedade.trim() !== "" && nomeLaudo.trim() !== "";
 
-  const handleImprimir = () => {
-    if (!isPro) {
-      window.location.href = "/#planos";
-      return;
+  // Função para salvar o relatório no banco de dados
+  const saveReport = async () => {
+    try {
+      const res = await fetch('/api/reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          toolId: 'depreciacao-maquinas',
+          area: 'financeiro',
+          inputs: { valorNovo, vidaUtilAnos, horasUsoAno, valorResidualPct, combustivelHora, manutencaoPct, operadorHora },
+          results: { valorResidual, depreciacaoAnual, depreciacaoHora, custoFixoHora, custoVariavelHora, custoHorarioTotal },
+          professionalData: {
+            responsavel,
+            creaCrtq: profile?.creaCrtq || "",
+            conselhoEstado: profile?.conselhoEstado || "",
+            logoUrl: profile?.logoUrl || ""
+          },
+          clientData: { cliente, propriedade, nomeLaudo }
+        })
+      });
+      if (!res.ok) return false;
+      return true;
+    } catch (err) {
+      console.error("Erro ao salvar laudo no banco:", err);
+      return false;
     }
-    if (!isFormValid) {
-      setShowValidationError(true);
-      return;
-    }
+  };
+
+  const handleSaveOnly = async () => {
+    if (!isFormValid) { setShowValidationError(true); return; }
     setShowValidationError(false);
+    setLoadingSave(true);
+    const saved = await saveReport();
+    setLoadingSave(false);
+    if (saved) {
+      initialInputsRef.current = { valorNovo, vidaUtilAnos, horasUsoAno, valorResidualPct, combustivelHora, manutencaoPct, operadorHora, cliente, propriedade, nomeLaudo };
+      setIsSaved(true);
+      router.refresh();
+      alert("✅ Laudo técnico gravado no seu histórico com sucesso!");
+    } else {
+      alert("⚠️ Não foi possível salvar o laudo na nuvem.");
+    }
+  };
+
+  const handleImprimir = async () => {
+    if (!isPro) { window.location.href = "/#planos"; return; }
+    if (!isFormValid) { setShowValidationError(true); return; }
+    setShowValidationError(false);
+    const saved = await saveReport();
+    if (!saved) {
+      const proceed = window.confirm("⚠️ Não foi possível salvar o laudo no banco de dados. Deseja abrir a tela de impressão local mesmo assim?");
+      if (!proceed) return;
+    }
     window.print();
   };
 
-  const handleGerarPdf = async () => {
-    if (!isPro) {
-      window.location.href = "/#planos";
-      return;
-    }
-    if (!isFormValid) {
-      setShowValidationError(true);
-      return;
-    }
+  const handleGerarPdf = async (skipSave = false) => {
+    if (!isPro) { window.location.href = "/#planos"; return; }
+    if (!isFormValid) { setShowValidationError(true); return; }
     setShowValidationError(false);
-
     if (gerandoPdf) return;
-    
     setGerandoPdf(true);
     try {
+      if (!skipSave) {
+        const saved = await saveReport();
+        if (!saved) {
+          const proceed = window.confirm("⚠️ Não foi possível salvar o laudo no banco de dados. Deseja prosseguir com a geração do PDF local mesmo assim?");
+          if (!proceed) return;
+        }
+      }
       const element = document.getElementById("pdf-content");
       if (!element) return;
-
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-      });
-
+      const canvas = await html2canvas(element, { scale: 2, useCORS: true, logging: false });
       const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4",
-      });
-
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
       pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      const blob = pdf.output('blob');
+      setPdfBlob(blob);
       pdf.save(`Depreciacao-Custos-${cliente || "Laudo"}.pdf`);
     } catch (error) {
       console.error("Erro ao gerar PDF:", error);
@@ -117,6 +249,16 @@ export default function DepreciacaoMaquinasClient({ isPro, userName }: Depreciac
       setGerandoPdf(false);
     }
   };
+
+  // Disparo automático do PDF se autoDownload=true estiver na URL
+  useEffect(() => {
+    if (reportId && autoDownload === 'true' && isPro && isFormValid) {
+      const timer = setTimeout(() => {
+        handleGerarPdf(true).then(() => { router.push('/dashboard/laudos'); });
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [reportId, autoDownload, isPro, isFormValid]);
 
   return (
     <div className={`min-h-screen bg-neutral-50/50 flex flex-col ${!isPro ? "select-none" : ""}`} onContextMenu={(e) => !isPro && e.preventDefault()}>
@@ -130,10 +272,13 @@ export default function DepreciacaoMaquinasClient({ isPro, userName }: Depreciac
         {/* Cabeçalho de Navegação e Título */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <Link href="/dashboard" className="inline-flex items-center text-sm font-medium text-neutral-500 hover:text-neutral-900 mb-2 transition-colors">
+            <button
+              onClick={() => { router.push('/dashboard'); router.refresh(); }}
+              className="inline-flex items-center text-sm font-medium text-neutral-500 hover:text-neutral-900 mb-2 transition-colors"
+            >
               <ArrowLeft className="w-4 h-4 mr-1" />
               Voltar ao Dashboard
-            </Link>
+            </button>
             <h1 className="text-2xl font-bold text-neutral-900 tracking-tight">
               Depreciação e Custo Horário de Máquinas
             </h1>
@@ -149,8 +294,16 @@ export default function DepreciacaoMaquinasClient({ isPro, userName }: Depreciac
             {isPro ? (
               <>
                 <button
+                  onClick={handleSaveOnly}
+                  disabled={!isFormValid || loadingSave}
+                  className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-emerald-50 border border-emerald-200 rounded-lg text-sm font-bold text-emerald-800 hover:bg-emerald-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  {loadingSave ? "Salvando..." : "Salvar"}
+                </button>
+                <button
                   onClick={handleImprimir}
-                  disabled={!isFormValid}
+                  disabled={!isFormValid || !isSaved}
                   className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-white border border-neutral-200 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Printer className="w-4 h-4 mr-2" />
@@ -158,7 +311,7 @@ export default function DepreciacaoMaquinasClient({ isPro, userName }: Depreciac
                 </button>
                 <button
                   onClick={handleGerarPdf}
-                  disabled={!isFormValid || gerandoPdf}
+                  disabled={!isFormValid || !isSaved || gerandoPdf}
                   className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-emerald-600 border border-transparent rounded-lg text-sm font-bold text-white hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {gerandoPdf ? (
@@ -168,9 +321,20 @@ export default function DepreciacaoMaquinasClient({ isPro, userName }: Depreciac
                   )}
                   {gerandoPdf ? "Gerando..." : "Gerar PDF"}
                 </button>
+                <ShareButton
+                  pdfBlob={pdfBlob}
+                  fileName={`Depreciacao-Custos-${cliente || "Laudo"}`}
+                  nomeLaudo={nomeLaudo}
+                  responsavel={responsavel}
+                  disabled={!isFormValid || !pdfBlob}
+                />
               </>
             ) : (
               <>
+                <Link href="/#planos" className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm font-medium text-neutral-400 hover:bg-neutral-100 transition-colors">
+                  <Lock className="w-4 h-4 mr-2" />
+                  Salvar
+                </Link>
                 <Link href="/#planos" className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-neutral-100 border border-neutral-200 rounded-lg text-sm font-medium text-neutral-500 hover:bg-neutral-200 transition-colors">
                   <Lock className="w-4 h-4 mr-2" />
                   Imprimir
@@ -178,6 +342,10 @@ export default function DepreciacaoMaquinasClient({ isPro, userName }: Depreciac
                 <Link href="/#planos" className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-emerald-600/50 border border-transparent rounded-lg text-sm font-bold text-white hover:bg-emerald-600/70 transition-colors">
                   <Lock className="w-4 h-4 mr-2" />
                   Gerar PDF
+                </Link>
+                <Link href="/#planos" className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-amber-600/50 border border-transparent rounded-lg text-sm font-bold text-white hover:bg-amber-600/70 transition-colors">
+                  <Lock className="w-4 h-4 mr-2" />
+                  Compartilhar
                 </Link>
               </>
             )}
@@ -314,16 +482,42 @@ export default function DepreciacaoMaquinasClient({ isPro, userName }: Depreciac
                     value={cliente}
                     onChange={(e) => {
                       setCliente(e.target.value);
-                      if (e.target.value.trim() !== "" && responsavel.trim() !== "") setShowValidationError(false);
+                      if (e.target.value.trim() !== "" && responsavel.trim() !== "" && propriedade.trim() !== "" && nomeLaudo.trim() !== "") setShowValidationError(false);
                     }}
                     placeholder="Nome do produtor ou fazenda"
                     className={`w-full px-3 py-2 border rounded-lg text-sm transition-colors ${showValidationError && cliente.trim() === "" ? "border-red-500 bg-red-50" : "border-neutral-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"}`}
                   />
                 </div>
+                <div>
+                  <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">Propriedade / Fazenda *</label>
+                  <input
+                    type="text"
+                    value={propriedade}
+                    onChange={(e) => {
+                      setPropriedade(e.target.value);
+                      if (e.target.value.trim() !== "" && responsavel.trim() !== "" && cliente.trim() !== "" && nomeLaudo.trim() !== "") setShowValidationError(false);
+                    }}
+                    placeholder="Nome da propriedade/fazenda"
+                    className={`w-full px-3 py-2 border rounded-lg text-sm transition-colors ${showValidationError && propriedade.trim() === "" ? "border-red-500 bg-red-50" : "border-neutral-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"}`}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">Nome do Laudo *</label>
+                  <input
+                    type="text"
+                    value={nomeLaudo}
+                    onChange={(e) => {
+                      setNomeLaudo(e.target.value);
+                      if (e.target.value.trim() !== "" && responsavel.trim() !== "" && cliente.trim() !== "" && propriedade.trim() !== "") setShowValidationError(false);
+                    }}
+                    placeholder="Ex: Depreciação Trator X 2026"
+                    className={`w-full px-3 py-2 border rounded-lg text-sm transition-colors ${showValidationError && nomeLaudo.trim() === "" ? "border-red-500 bg-red-50" : "border-neutral-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"}`}
+                  />
+                </div>
               </div>
               {showValidationError && (
                 <p className="text-[11px] font-medium text-red-600 animate-pulse mt-2">
-                  ⚠️ O campo Produtor / Cliente é obrigatório para emitir laudos e relatórios.
+                  ⚠️ Os campos Responsável Técnico, Produtor / Cliente, Propriedade / Fazenda e Nome do Laudo são obrigatórios.
                 </p>
               )}
             </div>
@@ -365,7 +559,7 @@ export default function DepreciacaoMaquinasClient({ isPro, userName }: Depreciac
 
                 {!isPro ? null : !isFormValid ? (
                   <div className="mt-3 p-3 rounded-xl bg-red-900/40 border border-red-500/30 text-xs text-red-200 relative z-10">
-                    ⚠️ Preencha o Produtor / Cliente para emitir o Laudo.
+                    ⚠️ Preencha todos os campos obrigatórios para emitir o Laudo.
                   </div>
                 ) : null}
               </div>
@@ -524,6 +718,14 @@ export default function DepreciacaoMaquinasClient({ isPro, userName }: Depreciac
               <div>
                 <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mb-1">Produtor / Cliente</p>
                 <p className="font-bold text-neutral-800 text-sm uppercase">{cliente || "Não informado"}</p>
+              </div>
+              <div>
+                <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mb-1">Propriedade / Fazenda</p>
+                <p className="font-bold text-neutral-800 text-sm uppercase">{propriedade || "Não informada"}</p>
+              </div>
+              <div>
+                <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-wider mb-1">Nome do Laudo</p>
+                <p className="font-bold text-neutral-800 text-sm uppercase">{nomeLaudo || "Não informado"}</p>
               </div>
             </div>
 

@@ -151,6 +151,27 @@ export default function DashboardClient({ isPro, proType, plans, reports, subscr
     return "39,90";
   };
 
+  const getToolName = (report: any) => {
+    const toolId = report.toolId;
+    let baseName = "";
+    if (toolId === "quebra-umidade") baseName = "Quebra de Umidade";
+    else if (toolId === "npk-balance") baseName = "Balanceador NPK";
+    else if (toolId === "calagem-gessagem") baseName = "Calagem e Gessagem";
+    else baseName = toolId;
+
+    if (report.clientData?.nomeLaudo) {
+      return `${baseName} - ${report.clientData.nomeLaudo}`;
+    }
+    return baseName;
+  };
+
+  const getToolUrl = (toolId: string, reportId: number) => {
+    if (toolId === "quebra-umidade") return `/ferramentas/quebra-umidade?reportId=${reportId}`;
+    if (toolId === "npk-balance") return `/ferramentas/balanceador-npk?reportId=${reportId}`;
+    if (toolId === "calagem-gessagem") return `/ferramentas/calagem-gessagem?reportId=${reportId}`;
+    return `/ferramentas/${toolId}?reportId=${reportId}`;
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
       
@@ -201,22 +222,34 @@ export default function DashboardClient({ isPro, proType, plans, reports, subscr
           </div>
 
           {reports.length > 0 ? (
-            <div className="divide-y divide-neutral-100">
+            <div className="divide-y divide-neutral-100 space-y-2">
               {reports.map((report) => (
                 <div key={report.id} className="py-4 flex justify-between items-center gap-4">
                   <div>
                     <span className="font-bold text-sm text-neutral-800 block">
-                      {report.toolId === 'quebra-umidade' ? 'Quebra de Umidade' : report.toolId}
+                      {getToolName(report)}
                     </span>
                     <span className="text-[11px] text-neutral-400 block mt-0.5">
-                      {new Date(report.createdAt).toLocaleDateString("pt-BR")} - Área: {report.area}
+                      {new Date(report.createdAt).toLocaleDateString("pt-BR")} - Cliente: {report.clientData?.cliente || "Não informado"}
                     </span>
                   </div>
-                  <button className="text-xs border border-neutral-200 rounded-lg px-3 py-1.5 font-bold hover:bg-neutral-50 transition-colors">
-                    Ver Laudo
-                  </button>
+                  <Link 
+                    href={getToolUrl(report.toolId, report.id)}
+                    className="text-xs border border-neutral-200 rounded-lg px-3 py-1.5 font-bold hover:bg-neutral-50 hover:text-neutral-900 transition-colors"
+                  >
+                    Reabrir
+                  </Link>
                 </div>
               ))}
+              <div className="pt-4 text-center border-t border-neutral-100">
+                <Link
+                  href="/dashboard/laudos"
+                  className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 hover:text-emerald-700 hover:underline"
+                >
+                  Ver histórico completo
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
             </div>
           ) : (
             <div className="text-center py-12 space-y-4">

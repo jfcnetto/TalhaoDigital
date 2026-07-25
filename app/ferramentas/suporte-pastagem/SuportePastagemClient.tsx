@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Printer, Lock, Download, Info, HelpCircle, Scale, Sprout } from "lucide-react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { ArrowLeft, Printer, Lock, Download, Info, HelpCircle, Scale, Sprout, Save, Share2 } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import ShareButton from "@/components/ShareButton";
 
 interface SuportePastagemClientProps {
   isPro: boolean;
@@ -46,6 +48,17 @@ const CATEGORIAS: Record<CategoriaAnimal, { nome: string; ua: number; pesoKg: nu
 };
 
 export default function SuportePastagemClient({ isPro, userName }: SuportePastagemClientProps) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const reportId = searchParams.get('reportId');
+  const autoDownload = searchParams.get('autoDownload');
+
+  // Loading state para salvar
+  const [loadingSave, setLoadingSave] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
+  const initialInputsRef = useRef<any>(null);
+
   // Lógica e Métodos
   const [metodo, setMetodo] = useState<MetodoEntrada>("direto");
   
@@ -59,21 +72,125 @@ export default function SuportePastagemClient({ isPro, userName }: SuportePastag
   const [pesoFrescoG, setPesoFrescoG] = useState<number>(1200); // g/m² fresco
   const [msPlantaPct, setMsPlantaPct] = useState<number>(25); // % de matéria seca na planta fresca
 
-  // Eficiência
+  // Eficiência de pastejo
   const [eficienciaPreset, setEficienciaPreset] = useState<EficienciaPreset>("rotacionado_padrao");
-  const [eficienciaPct, setEficienciaPct] = useState<number>(55);
+  const [eficienciaPct, setEficienciaPct] = useState<number>(55); // Eficiência de utilização (%)
 
-  // Consumo e Animal
-  const [consumoPvPct, setConsumoPvPct] = useState<number>(2.25); // % do Peso Vivo em MS por dia
-  const [categoria, setCategoria] = useState<CategoriaAnimal>("vaca_lactante");
+  // Consumo do Rebanho
+  const [categoriaAnimal, setCategoriaAnimal] = useState<CategoriaAnimal>("boi_gordo");
+  const [pesoVivoMedio, setPesoVivoMedio] = useState<number>(450); // Peso Vivo médio do animal (kg)
+  const [consumoMsPctPv, setConsumoMsPctPv] = useState<number>(2.5); // Consumo diário de MS (% do PV)
 
   // Laudo Técnico
   const [responsavel, setResponsavel] = useState<string>(userName || "");
   const [cliente, setCliente] = useState<string>("");
+  const [propriedade, setPropriedade] = useState<string>("");
+  const [nomeLaudo, setNomeLaudo] = useState<string>("");
+  const [profile, setProfile] = useState<{
+    creaCrtq?: string;
+    conselhoEstado?: string;
+    logoUrl?: string;
+  } | null>(null);
+
   const [showValidationError, setShowValidationError] = useState<boolean>(false);
   const [gerandoPdf, setGerandoPdf] = useState(false);
 
-  const isFormValid = responsavel.trim() !== "" && cliente.trim() !== "";
+  useEffect(() => {
+    if (userName) {
+      fetch("/api/user/profile")
+        .then((res) => res.json())
+        .then((data) => {
+          setProfile(data);
+          if (data.name) setResponsavel(data.name);
+        })
+        .catch((err) => console.error("Erro ao buscar perfil complementar:", err));
+    }
+  }, [userName]);
+
+  // Carregar dados de um laudo antigo (Reabrir / Duplicar)
+  useEffect(() => {
+    if (reportId) {
+      fetch(`/api/reports/${reportId}`)
+        .then((res) => { if (!res.ok) throw new Error("Erro ao carregar"); return res.json(); })
+        .then((data) => {
+          if (data && data.inputs && data.clientData) {
+            setMetodo(data.inputs.metodo || "direto");
+            setPastagemPreset(data.inputs.pastagemPreset || "brachiaria_marandu");
+            setProdMsCiclo(Number(data.inputs.prodMsCiclo || 3000));
+            setAreaHa(Number(data.inputs.areaHa || 10));
+            setDiasPeriodo(Number(data.inputs.diasPeriodo || 30));
+            setPesoFrescoG(Number(data.inputs.pesoFrescoG || 1200));
+            setMsPlantaPct(Number(data.inputs.msPlantaPct || 25));
+            setEficienciaPreset(data.inputs.eficienciaPreset || "rotacionado_padrao");
+            setEficienciaPct(Number(data.inputs.eficienciaPct || 55));
+            setCategoriaAnimal(data.inputs.categoriaAnimal || "boi_gordo");
+            setPesoVivoMedio(Number(data.inputs.pesoVivoMedio || 450));
+            setConsumoMsPctPv(Number(data.inputs.consumoMsPctPv || 2.5));
+            setCliente(data.clientData.cliente || "");
+            setPropriedade(data.clientData.propriedade || "");
+            setNomeLaudo(data.clientData.nomeLaudo || "");
+            if (data.professionalData?.responsavel) setResponsavel(data.professionalData.responsavel);
+            initialInputsRef.current = {
+              metodo: data.inputs.metodo || "direto",
+              pastagemPreset: data.inputs.pastagemPreset || "brachiaria_marandu",
+              prodMsCiclo: Number(data.inputs.prodMsCiclo || 3000),
+              areaHa: Number(data.inputs.areaHa || 10),
+              diasPeriodo: Number(data.inputs.diasPeriodo || 30),
+              pesoFrescoG: Number(data.inputs.pesoFrescoG || 1200),
+              msPlantaPct: Number(data.inputs.msPlantaPct || 25),
+              eficienciaPreset: data.inputs.eficienciaPreset || "rotacionado_padrao",
+              eficienciaPct: Number(data.inputs.eficienciaPct || 55),
+              categoriaAnimal: data.inputs.categoriaAnimal || "boi_gordo",
+              pesoVivoMedio: Number(data.inputs.pesoVivoMedio || 450),
+              consumoMsPctPv: Number(data.inputs.consumoMsPctPv || 2.5),
+              cliente: data.clientData.cliente || "",
+              propriedade: data.clientData.propriedade || "",
+              nomeLaudo: data.clientData.nomeLaudo || ""
+            };
+            setIsSaved(true);
+          }
+        })
+        .catch((err) => console.error("Erro ao carregar laudo do histórico:", err));
+    }
+  }, [reportId]);
+
+  // Monitorar alterações para invalidar status de salvo
+  useEffect(() => {
+    if (initialInputsRef.current) {
+      const isDifferent =
+        metodo !== initialInputsRef.current.metodo ||
+        pastagemPreset !== initialInputsRef.current.pastagemPreset ||
+        prodMsCiclo !== initialInputsRef.current.prodMsCiclo ||
+        areaHa !== initialInputsRef.current.areaHa ||
+        diasPeriodo !== initialInputsRef.current.diasPeriodo ||
+        pesoFrescoG !== initialInputsRef.current.pesoFrescoG ||
+        msPlantaPct !== initialInputsRef.current.msPlantaPct ||
+        eficienciaPreset !== initialInputsRef.current.eficienciaPreset ||
+        eficienciaPct !== initialInputsRef.current.eficienciaPct ||
+        categoriaAnimal !== initialInputsRef.current.categoriaAnimal ||
+        pesoVivoMedio !== initialInputsRef.current.pesoVivoMedio ||
+        consumoMsPctPv !== initialInputsRef.current.consumoMsPctPv ||
+        cliente !== initialInputsRef.current.cliente ||
+        propriedade !== initialInputsRef.current.propriedade ||
+        nomeLaudo !== initialInputsRef.current.nomeLaudo;
+      if (isDifferent) { setIsSaved(false); initialInputsRef.current = null; }
+    } else { setIsSaved(false); }
+  }, [metodo, pastagemPreset, prodMsCiclo, areaHa, diasPeriodo, pesoFrescoG, msPlantaPct, eficienciaPreset, eficienciaPct, categoriaAnimal, pesoVivoMedio, consumoMsPctPv, cliente, propriedade, nomeLaudo]);
+
+  // Proteção Anti-PrintScreen
+  useEffect(() => {
+    if (isPro) return;
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === "PrintScreen") {
+        try { navigator.clipboard?.writeText(""); } catch (err) {}
+        alert("🔒 A captura de tela deste relatório é bloqueada no Plano Gratuito. Assine o Plano Pro!");
+      }
+    };
+    window.addEventListener("keyup", handleKeyUp);
+    return () => window.removeEventListener("keyup", handleKeyUp);
+  }, [isPro]);
+
+  const isFormValid = responsavel.trim() !== "" && cliente.trim() !== "" && propriedade.trim() !== "" && nomeLaudo.trim() !== "";
 
   // ======================================================
   // PROCESSAMENTO E CÁLCULO
@@ -86,8 +203,8 @@ export default function SuportePastagemClient({ isPro, userName }: SuportePastag
   // Forragem Consumível Total (kg MS/ha)
   const msConsumivelHa = msPorHectare * (eficienciaPct / 100);
 
-  // Consumo diário por UA (kg MS/dia)
-  const consumoUADia = 450 * (consumoPvPct / 100);
+  // Consumo diário por UA (kg MS/dia) - 1 UA = 450 kg
+  const consumoUADia = 450 * (consumoMsPctPv / 100);
 
   // Consumo total por UA no período (kg MS)
   const consumoUAPeriodo = consumoUADia * diasPeriodo;
@@ -99,13 +216,57 @@ export default function SuportePastagemClient({ isPro, userName }: SuportePastag
   const lotacaoTotalUa = lotacaoUaHa * areaHa;
 
   // Equivalência em Animais
-  const animalUaFator = CATEGORIAS[categoria].ua;
+  const animalUaFator = CATEGORIAS[categoriaAnimal].ua;
   const totalAnimais = animalUaFator > 0 ? lotacaoTotalUa / animalUaFator : 0;
+
+  // Função para salvar o relatório no banco de dados
+  const saveReport = async () => {
+    try {
+      const res = await fetch('/api/reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          toolId: 'suporte-pastagem',
+          area: 'pecuaria',
+          inputs: { metodo, pastagemPreset, prodMsCiclo, areaHa, diasPeriodo, pesoFrescoG, msPlantaPct, eficienciaPreset, eficienciaPct, categoriaAnimal, pesoVivoMedio, consumoMsPctPv },
+          results: { msPorHectare, msConsumivelHa, lotacaoUaHa, lotacaoTotalUa, totalAnimais },
+          professionalData: {
+            responsavel,
+            creaCrtq: profile?.creaCrtq || "",
+            conselhoEstado: profile?.conselhoEstado || "",
+            logoUrl: profile?.logoUrl || ""
+          },
+          clientData: { cliente, propriedade, nomeLaudo }
+        })
+      });
+      if (!res.ok) return false;
+      return true;
+    } catch (err) {
+      console.error("Erro ao salvar laudo no banco:", err);
+      return false;
+    }
+  };
+
+  const handleSaveOnly = async () => {
+    if (!isFormValid) { setShowValidationError(true); return; }
+    setShowValidationError(false);
+    setLoadingSave(true);
+    const saved = await saveReport();
+    setLoadingSave(false);
+    if (saved) {
+      initialInputsRef.current = { metodo, pastagemPreset, prodMsCiclo, areaHa, diasPeriodo, pesoFrescoG, msPlantaPct, eficienciaPreset, eficienciaPct, categoriaAnimal, pesoVivoMedio, consumoMsPctPv, cliente, propriedade, nomeLaudo };
+      setIsSaved(true);
+      router.refresh();
+      alert("✅ Laudo técnico gravado no seu histórico com sucesso!");
+    } else {
+      alert("⚠️ Não foi possível salvar o laudo na nuvem.");
+    }
+  };
 
   // ======================================================
   // GERAÇÃO DE PDF / IMPRESSÃO
   // ======================================================
-  const handleImprimir = () => {
+  const handleImprimir = async () => {
     if (!isPro) {
       window.location.href = "/#planos";
       return;
@@ -115,10 +276,15 @@ export default function SuportePastagemClient({ isPro, userName }: SuportePastag
       return;
     }
     setShowValidationError(false);
+    const saved = await saveReport();
+    if (!saved) {
+      const proceed = window.confirm("⚠️ Não foi possível salvar o laudo no banco de dados. Deseja abrir a tela de impressão local mesmo assim?");
+      if (!proceed) return;
+    }
     window.print();
   };
 
-  const handleGerarPdf = async () => {
+  const handleGerarPdf = async (skipSave = false) => {
     if (!isPro) {
       window.location.href = "/#planos";
       return;
@@ -133,6 +299,13 @@ export default function SuportePastagemClient({ isPro, userName }: SuportePastag
     setGerandoPdf(true);
 
     try {
+      if (!skipSave) {
+        const saved = await saveReport();
+        if (!saved) {
+          const proceed = window.confirm("⚠️ Não foi possível salvar o laudo no banco de dados. Deseja prosseguir com a geração do PDF local mesmo assim?");
+          if (!proceed) return;
+        }
+      }
       const element = document.getElementById("pdf-content");
       if (!element) return;
 
@@ -153,6 +326,8 @@ export default function SuportePastagemClient({ isPro, userName }: SuportePastag
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
       pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      const blob = pdf.output('blob');
+      setPdfBlob(blob);
       pdf.save(`Suporte-Pastagem-${cliente || "Laudo"}.pdf`);
     } catch (error) {
       console.error("Erro ao gerar PDF:", error);
@@ -161,6 +336,18 @@ export default function SuportePastagemClient({ isPro, userName }: SuportePastag
       setGerandoPdf(false);
     }
   };
+
+  // Disparo automático do PDF se autoDownload=true estiver na URL
+  useEffect(() => {
+    if (reportId && autoDownload === 'true' && isPro && isFormValid) {
+      const timer = setTimeout(() => {
+        handleGerarPdf(true).then(() => {
+          router.push('/dashboard/laudos');
+        });
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [reportId, autoDownload, isPro, isFormValid]);
 
   // ======================================================
   // ILUSTRAÇÃO DINÂMICA DO PASTO SVG
@@ -271,8 +458,16 @@ export default function SuportePastagemClient({ isPro, userName }: SuportePastag
             {isPro ? (
               <>
                 <button
+                  onClick={handleSaveOnly}
+                  disabled={!isFormValid || loadingSave}
+                  className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-emerald-50 border border-emerald-200 rounded-lg text-sm font-bold text-emerald-800 hover:bg-emerald-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  {loadingSave ? "Salvando..." : "Salvar"}
+                </button>
+                <button
                   onClick={handleImprimir}
-                  disabled={!isFormValid}
+                  disabled={!isFormValid || !isSaved}
                   className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-white border border-neutral-300 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Printer className="w-4 h-4 mr-2" />
@@ -280,7 +475,7 @@ export default function SuportePastagemClient({ isPro, userName }: SuportePastag
                 </button>
                 <button
                   onClick={handleGerarPdf}
-                  disabled={!isFormValid || gerandoPdf}
+                  disabled={!isFormValid || !isSaved || gerandoPdf}
                   className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-emerald-600 border border-transparent rounded-lg text-sm font-bold text-white hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {gerandoPdf ? (
@@ -290,9 +485,20 @@ export default function SuportePastagemClient({ isPro, userName }: SuportePastag
                   )}
                   {gerandoPdf ? "Gerando..." : "Exportar PDF"}
                 </button>
+                <ShareButton
+                  pdfBlob={pdfBlob}
+                  fileName={`Suporte-Pastagem-${cliente || "Laudo"}`}
+                  nomeLaudo={nomeLaudo}
+                  responsavel={responsavel}
+                  disabled={!isFormValid || !pdfBlob}
+                />
               </>
             ) : (
               <>
+                <Link href="/#planos" className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm font-medium text-neutral-400 hover:bg-neutral-100 transition-colors">
+                  <Lock className="w-4 h-4 mr-2" />
+                  Salvar
+                </Link>
                 <Link href="/#planos" className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-neutral-100 border border-neutral-200 rounded-lg text-sm font-medium text-neutral-500 hover:bg-neutral-200 transition-colors">
                   <Lock className="w-4 h-4 mr-2" />
                   Imprimir
@@ -300,6 +506,10 @@ export default function SuportePastagemClient({ isPro, userName }: SuportePastag
                 <Link href="/#planos" className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-emerald-600/50 border border-transparent rounded-lg text-sm font-bold text-white hover:bg-emerald-600/70 transition-colors">
                   <Lock className="w-4 h-4 mr-2" />
                   Exportar PDF
+                </Link>
+                <Link href="/#planos" className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-amber-600/50 border border-transparent rounded-lg text-sm font-bold text-white hover:bg-amber-600/70 transition-colors">
+                  <Lock className="w-4 h-4 mr-2" />
+                  Compartilhar
                 </Link>
               </>
             )}
@@ -492,8 +702,8 @@ export default function SuportePastagemClient({ isPro, userName }: SuportePastag
                 <div>
                   <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">Categoria Comercial do Rebanho</label>
                   <select
-                    value={categoria}
-                    onChange={(e) => setCategoria(e.target.value as CategoriaAnimal)}
+                    value={categoriaAnimal}
+                    onChange={(e) => setCategoriaAnimal(e.target.value as CategoriaAnimal)}
                     className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm bg-white"
                   >
                     {Object.entries(CATEGORIAS).map(([key, cat]) => (
@@ -505,8 +715,8 @@ export default function SuportePastagemClient({ isPro, userName }: SuportePastag
                   <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">Consumo de MS diário (% do Peso Vivo)</label>
                   <input
                     type="number"
-                    value={consumoPvPct}
-                    onChange={(e) => setConsumoPvPct(Number(e.target.value))}
+                    value={consumoMsPctPv}
+                    onChange={(e) => setConsumoMsPctPv(Number(e.target.value))}
                     min={1}
                     max={5}
                     step={0.05}
@@ -525,28 +735,61 @@ export default function SuportePastagemClient({ isPro, userName }: SuportePastag
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">Responsável Técnico</label>
+                  <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">Responsável Técnico *</label>
                   <input
                     type="text"
                     value={responsavel}
-                    readOnly
-                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm bg-neutral-100 text-neutral-500 cursor-not-allowed"
+                    readOnly={!!userName}
+                    onChange={(e) => setResponsavel(e.target.value)}
+                    placeholder="Nome do agrônomo ou técnico"
+                    className={`w-full px-3 py-2 border rounded-lg text-sm transition-colors ${showValidationError && responsavel.trim() === "" ? "border-red-500 bg-red-50" : "border-neutral-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"} ${userName ? "bg-neutral-100 text-neutral-500 cursor-not-allowed" : ""}`}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">Produtor / Cliente</label>
+                  <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">Produtor / Cliente *</label>
                   <input
                     type="text"
                     value={cliente}
                     onChange={(e) => {
                       setCliente(e.target.value);
-                      if (showValidationError && e.target.value.trim() !== "") setShowValidationError(false);
+                      if (e.target.value.trim() !== "" && responsavel.trim() !== "" && propriedade.trim() !== "" && nomeLaudo.trim() !== "") setShowValidationError(false);
                     }}
-                    placeholder="Nome do produtor ou empresa"
-                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm bg-white"
+                    placeholder="Nome do produtor ou fazenda"
+                    className={`w-full px-3 py-2 border rounded-lg text-sm transition-colors ${showValidationError && cliente.trim() === "" ? "border-red-500 bg-red-50" : "border-neutral-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"}`}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">Propriedade / Fazenda *</label>
+                  <input
+                    type="text"
+                    value={propriedade}
+                    onChange={(e) => {
+                      setPropriedade(e.target.value);
+                      if (e.target.value.trim() !== "" && responsavel.trim() !== "" && cliente.trim() !== "" && nomeLaudo.trim() !== "") setShowValidationError(false);
+                    }}
+                    placeholder="Nome da propriedade/fazenda"
+                    className={`w-full px-3 py-2 border rounded-lg text-sm transition-colors ${showValidationError && propriedade.trim() === "" ? "border-red-500 bg-red-50" : "border-neutral-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"}`}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">Nome do Laudo *</label>
+                  <input
+                    type="text"
+                    value={nomeLaudo}
+                    onChange={(e) => {
+                      setNomeLaudo(e.target.value);
+                      if (e.target.value.trim() !== "" && responsavel.trim() !== "" && cliente.trim() !== "" && propriedade.trim() !== "") setShowValidationError(false);
+                    }}
+                    placeholder="Ex: Lotação Invernada Seca 2026"
+                    className={`w-full px-3 py-2 border rounded-lg text-sm transition-colors ${showValidationError && nomeLaudo.trim() === "" ? "border-red-500 bg-red-50" : "border-neutral-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"}`}
                   />
                 </div>
               </div>
+              {showValidationError && (
+                <p className="text-[11px] font-medium text-red-600 animate-pulse mt-2">
+                  ⚠️ Os campos Responsável Técnico, Produtor / Cliente, Propriedade / Fazenda e Nome do Laudo são obrigatórios.
+                </p>
+              )}
             </div>
 
           </div>
@@ -573,17 +816,17 @@ export default function SuportePastagemClient({ isPro, userName }: SuportePastag
                 <div className="mt-6 pt-4 border-t border-emerald-900">
                   <p className="text-emerald-400 text-[10px] uppercase font-bold tracking-wider">Animais Suportados no Piquete</p>
                   <p className="text-2xl font-extrabold text-white mt-1">
-                    {Math.floor(totalAnimais)} <span className="text-sm text-emerald-300 font-semibold">{CATEGORIAS[categoria].nome}s</span>
+                    {Math.floor(totalAnimais)} <span className="text-sm text-emerald-300 font-semibold">{CATEGORIAS[categoriaAnimal].nome}s</span>
                   </p>
                   <p className="text-[10px] text-emerald-400/80 mt-1">
-                    Equivalente a {animalUaFator} UA por cabeça ({CATEGORIAS[categoria].pesoKg} kg PV)
+                    Equivalente a {animalUaFator} UA por cabeça ({CATEGORIAS[categoriaAnimal].pesoKg} kg PV)
                   </p>
                 </div>
 
                 {/* Mensagens de erro/validação */}
                 {!isPro ? null : !isFormValid ? (
                   <div className="mt-4 p-3 rounded-xl bg-red-900/40 border border-red-500/30 text-xs text-red-200 relative z-10">
-                    ⚠️ Preencha o Produtor / Cliente para emitir o Laudo.
+                    ⚠️ Preencha todos os campos obrigatórios para emitir o Laudo.
                   </div>
                 ) : null}
               </div>
@@ -612,7 +855,7 @@ export default function SuportePastagemClient({ isPro, userName }: SuportePastag
         <div className="mt-8 bg-white rounded-2xl p-6 shadow-sm border border-neutral-100">
           <h2 className="font-bold text-lg text-neutral-800 mb-4 flex items-center gap-2">
             <HelpCircle className="w-4 h-4 text-emerald-600" />
-            Memória de Cálculo
+            Memória de Cálculo — Capacidade de Suporte de Pastagem
           </h2>
           <div className="font-mono text-xs text-neutral-700 space-y-4 bg-neutral-50 rounded-xl p-5">
             <div>
@@ -643,7 +886,7 @@ export default function SuportePastagemClient({ isPro, userName }: SuportePastag
               <span className="text-emerald-800 font-bold block mb-1">3. Consumo Requerido por UA (450 kg PV):</span>
               Consumo Diário por UA = 450 × (% Peso Vivo Consumo / 100)
               <br />
-              Consumo Diário por UA = 450 × ({consumoPvPct} / 100) = {consumoUADia.toFixed(3)} kg MS/dia
+              Consumo Diário por UA = 450 × ({consumoMsPctPv} / 100) = {consumoUADia.toFixed(3)} kg MS/dia
               <br />
               <br />
               Consumo no Período = Consumo Diário por UA × Dias de Permanência
@@ -663,7 +906,7 @@ export default function SuportePastagemClient({ isPro, userName }: SuportePastag
               Suporte Total = {lotacaoUaHa.toFixed(4)} × {areaHa} = <span className="font-bold">{lotacaoTotalUa.toFixed(2)} UA</span>
               <br />
               <br />
-              Número de Animais = Suporte Total / Fator Equivalência ({CATEGORIAS[categoria].nome}: {animalUaFator} UA)
+              Número de Animais = Suporte Total / Fator Equivalência ({CATEGORIAS[categoriaAnimal].nome}: {animalUaFator} UA)
               <br />
               Número de Animais = {lotacaoTotalUa.toFixed(2)} / {animalUaFator} = <span className="font-bold text-emerald-850">{Math.floor(totalAnimais)} cabeças</span>
             </div>
@@ -714,8 +957,8 @@ export default function SuportePastagemClient({ isPro, userName }: SuportePastag
                   <tr><td className="p-2 border border-neutral-200">Eficiência de Pastejo</td><td className="p-2 text-right font-bold border border-neutral-200">{eficienciaPct}%</td></tr>
                   <tr><td className="p-2 border border-neutral-200">Área Avaliada do Pasto</td><td className="p-2 text-right font-bold border border-neutral-200">{areaHa} ha</td></tr>
                   <tr><td className="p-2 border border-neutral-200">Período de Pastejo</td><td className="p-2 text-right font-bold border border-neutral-200">{diasPeriodo} dias</td></tr>
-                  <tr><td className="p-2 border border-neutral-200">Consumo Alimentar</td><td className="p-2 text-right font-bold border border-neutral-200">{consumoPvPct}% do PV/dia</td></tr>
-                  <tr><td className="p-2 border border-neutral-200">Categoria Animal de Destino</td><td className="p-2 text-right font-bold border border-neutral-200">{CATEGORIAS[categoria].nome}</td></tr>
+                  <tr><td className="p-2 border border-neutral-200">Consumo Alimentar</td><td className="p-2 text-right font-bold border border-neutral-200">{consumoMsPctPv}% do PV/dia</td></tr>
+                  <tr><td className="p-2 border border-neutral-200">Categoria Animal de Destino</td><td className="p-2 text-right font-bold border border-neutral-200">{CATEGORIAS[categoriaAnimal].nome}</td></tr>
                   
                   <tr className="bg-emerald-50">
                     <td className="p-2 border border-emerald-200 font-bold">Lotação Recomendada (UA/ha)</td>
@@ -726,12 +969,14 @@ export default function SuportePastagemClient({ isPro, userName }: SuportePastag
                     <td className="p-2 text-right font-extrabold text-emerald-800 border border-emerald-200">{lotacaoTotalUa.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} UA</td>
                   </tr>
                   <tr className="bg-emerald-100">
-                    <td className="p-2 border border-emerald-300 font-bold">Cabeças de {CATEGORIAS[categoria].nome}</td>
+                    <td className="p-2 border border-emerald-300 font-bold">Cabeças de {CATEGORIAS[categoriaAnimal].nome}</td>
                     <td className="p-2 text-right font-extrabold text-emerald-900 border border-emerald-300">{Math.floor(totalAnimais)} cabeças</td>
                   </tr>
 
                   <tr><td className="p-2 border border-neutral-200">Responsável Técnico</td><td className="p-2 text-right font-bold border border-neutral-200">{responsavel}</td></tr>
                   <tr><td className="p-2 border border-neutral-200">Produtor / Cliente</td><td className="p-2 text-right font-bold border border-neutral-200">{cliente}</td></tr>
+                  <tr><td className="p-2 border border-neutral-200">Propriedade / Fazenda</td><td className="p-2 text-right font-bold border border-neutral-200">{propriedade || "Não informada"}</td></tr>
+                  <tr><td className="p-2 border border-neutral-200">Nome do Laudo</td><td className="p-2 text-right font-bold border border-neutral-200">{nomeLaudo || "Não informado"}</td></tr>
                 </tbody>
               </table>
             </div>

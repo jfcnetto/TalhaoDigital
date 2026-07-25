@@ -1,14 +1,19 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { Calculator, FileText, Info, HelpCircle, Printer, ArrowLeft, Lock, Download } from "lucide-react";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
+import { useSearchParams, useRouter } from "next/navigation";
+import { Calculator, FileText, Info, HelpCircle, Printer, ArrowLeft, Lock, Download, Save, Share2 } from "lucide-react";
+import ShareButton from "@/components/ShareButton";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { useTechnicalReport } from "@/hooks/useTechnicalReport";
 
 export default function CalagemGessagemClient({ isPro = false, userName }: { isPro?: boolean, userName?: string }) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const reportId = searchParams.get('reportId');
+
   // Inputs Analise de Solo
   const [ca, setCa] = useState<number>(1.2);
   const [mg, setMg] = useState<number>(0.5);
@@ -22,8 +27,28 @@ export default function CalagemGessagemClient({ isPro = false, userName }: { isP
 
   // Laudo Técnico (Obrigatórios)
   const [produtor, setProdutor] = useState<string>("");
+  const [propriedade, setPropriedade] = useState<string>("");
+  const [nomeLaudo, setNomeLaudo] = useState<string>("");
   const [responsavelTecnico, setResponsavelTecnico] = useState<string>(userName || "");
-  const [showValidationError, setShowValidationError] = useState<boolean>(false);
+  const [profile, setProfile] = useState<{
+    creaCrtq?: string;
+    conselhoEstado?: string;
+    logoUrl?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (userName) {
+      fetch("/api/user/profile")
+        .then((res) => res.json())
+        .then((data) => {
+          setProfile(data);
+          if (data.name) {
+            setResponsavelTecnico(data.name);
+          }
+        })
+        .catch((err) => console.error("Erro ao buscar perfil complementar:", err));
+    }
+  }, [userName]);
 
   const reportRef = useRef<HTMLDivElement>(null);
 
@@ -49,65 +74,49 @@ export default function CalagemGessagemClient({ isPro = false, userName }: { isP
   const nc = prnt > 0 ? Math.max(0, (ctc * (v2 - v1)) / prnt) : 0;
   
   // Necessidade de Gesso (ton/ha) - Fórmula genérica Cerrado (50 * Argila)
-  // NG kg/ha = 50 * Argila -> Ton/ha = (50 * Argila) / 1000
   const ngKg = 50 * argila;
   const ngTon = ngKg / 1000;
 
-  // Validação dos Campos Obrigatórios
-  const isFormValid = produtor.trim() !== "" && responsavelTecnico.trim() !== "";
-
-  // Exportar para PDF
-  const handleExportPDF = async () => {
-    if (!isPro) {
-      window.location.href = "/#planos";
-      return;
-    }
-    if (!isFormValid) {
-      setShowValidationError(true);
-      return;
-    }
-    setShowValidationError(false);
-
-    if (!reportRef.current) return;
-    
-    try {
-      const element = reportRef.current;
-      const canvas = await html2canvas(element, { scale: 2, useCORS: true, logging: false });
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF("p", "mm", "a4");
-      const imgWidth = 210; 
-      const pageHeight = 295; 
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+  // Consome o hook customizado centralizado
+  const {
+    isSaved,
+    loadingSave,
+    pdfBlob,
+    showValidationError,
+    setShowValidationError,
+    isFormValid,
+    handleSaveOnly,
+    handleImprimir,
+    handleGerarPdf
+  } = useTechnicalReport({
+    toolId: "calagem-gessagem",
+    area: "agricultura",
+    inputs: { ca, mg, k, hAl, v2, prnt, argila },
+    results: { sb, ctc, v1, nc, ngKg, ngTon },
+    nomeLaudo,
+    cliente: produtor,
+    propriedade,
+    responsavelTecnico,
+    isPro,
+    profileComplementar: profile,
+    reportRef,
+    pdfFileNamePrefix: "calagem-gessagem",
+    onLoadReportData: (loadedInputs, loadedClient, loadedProf) => {
+      setCa(Number(loadedInputs.ca || 0));
+      setMg(Number(loadedInputs.mg || 0));
+      setK(Number(loadedInputs.k || 0));
+      setHAl(Number(loadedInputs.hAl || 0));
+      setV2(Number(loadedInputs.v2 || 0));
+      setPrnt(Number(loadedInputs.prnt || 0));
+      setArgila(Number(loadedInputs.argila || 0));
+      setProdutor(loadedClient.cliente || "");
+      setPropriedade(loadedClient.propriedade || "");
+      setNomeLaudo(loadedClient.nomeLaudo || "");
+      if (loadedProf?.responsavel) {
+        setResponsavelTecnico(loadedProf.responsavel);
       }
-      pdf.save(`laudo-calagem-gessagem-${produtor.replace(/\s+/g, "-").toLowerCase()}.pdf`);
-    } catch (error) {
-      console.error("Erro ao gerar PDF:", error);
-      alert("Houve um problema ao gerar o PDF.");
     }
-  };
-
-  const handlePrint = () => {
-    if (!isPro) {
-      window.location.href = "/#planos";
-      return;
-    }
-    if (!isFormValid) {
-      setShowValidationError(true);
-      return;
-    }
-    setShowValidationError(false);
-    window.print();
-  };
+  });
 
   return (
     <div className={`min-h-screen bg-neutral-50/50 flex flex-col ${!isPro ? "select-none" : ""}`} onContextMenu={(e) => !isPro && e.preventDefault()}>
@@ -121,10 +130,16 @@ export default function CalagemGessagemClient({ isPro = false, userName }: { isP
         {/* Cabeçalho de Navegação e Título */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <Link href="/dashboard" className="inline-flex items-center text-sm font-medium text-neutral-500 hover:text-neutral-900 mb-2 transition-colors">
+            <button
+              onClick={() => {
+                router.push('/dashboard');
+                router.refresh();
+              }}
+              className="inline-flex items-center text-sm font-medium text-neutral-500 hover:text-neutral-900 mb-2 transition-colors"
+            >
               <ArrowLeft className="w-4 h-4 mr-1" />
               Voltar ao Dashboard
-            </Link>
+            </button>
             <h1 className="text-2xl font-bold text-neutral-900 tracking-tight">
               Calculadora de Calagem e Gessagem
             </h1>
@@ -140,24 +155,44 @@ export default function CalagemGessagemClient({ isPro = false, userName }: { isP
             {isPro ? (
               <>
                 <button
-                  onClick={handlePrint}
-                  disabled={!isFormValid}
+                  onClick={handleSaveOnly}
+                  disabled={!isFormValid || loadingSave}
+                  className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-emerald-50 border border-emerald-200 rounded-lg text-sm font-bold text-emerald-800 hover:bg-emerald-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  {loadingSave ? "Salvando..." : "Salvar"}
+                </button>
+                <button
+                  onClick={handleImprimir}
+                  disabled={!isFormValid || !isSaved}
                   className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-white border border-neutral-200 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Printer className="w-4 h-4 mr-2" />
                   Imprimir
                 </button>
                 <button
-                  onClick={handleExportPDF}
-                  disabled={!isFormValid}
+                  onClick={() => handleGerarPdf(false)}
+                  disabled={!isFormValid || !isSaved}
                   className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-emerald-600 border border-transparent rounded-lg text-sm font-bold text-white hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Gerar PDF
                 </button>
+                <ShareButton
+                  pdfBlob={pdfBlob}
+                  fileName={`calagem-gessagem-${nomeLaudo.replace(/\s+/g, "-").toLowerCase()}`}
+                  nomeLaudo={nomeLaudo}
+                  responsavel={responsavelTecnico}
+                  disabled={!isFormValid}
+                  onGeneratePdf={() => handleGerarPdf(true)}
+                />
               </>
             ) : (
               <>
+                <Link href="/#planos" className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm font-medium text-neutral-400 hover:bg-neutral-100 transition-colors">
+                  <Lock className="w-4 h-4 mr-2" />
+                  Salvar
+                </Link>
                 <Link href="/#planos" className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-neutral-100 border border-neutral-200 rounded-lg text-sm font-medium text-neutral-500 hover:bg-neutral-200 transition-colors">
                   <Lock className="w-4 h-4 mr-2" />
                   Imprimir
@@ -165,6 +200,10 @@ export default function CalagemGessagemClient({ isPro = false, userName }: { isP
                 <Link href="/#planos" className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-emerald-600/50 border border-transparent rounded-lg text-sm font-bold text-white hover:bg-emerald-600/70 transition-colors">
                   <Lock className="w-4 h-4 mr-2" />
                   Gerar PDF
+                </Link>
+                <Link href="/#planos" className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-amber-600/50 border border-transparent rounded-lg text-sm font-bold text-white hover:bg-amber-600/70 transition-colors">
+                  <Lock className="w-4 h-4 mr-2" />
+                  Compartilhar
                 </Link>
               </>
             )}
@@ -269,7 +308,7 @@ export default function CalagemGessagemClient({ isPro = false, userName }: { isP
                 <h3 className="text-xs font-bold text-neutral-800 uppercase tracking-wider flex items-center gap-1">
                   Laudo Técnico <span className="text-red-500 font-bold">*</span>
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">Responsável Técnico *</label>
                     <input
@@ -286,7 +325,7 @@ export default function CalagemGessagemClient({ isPro = false, userName }: { isP
                   <div>
                     <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">Produtor / Cliente *</label>
                     <input
-                      type="text" placeholder="Nome do produtor ou fazenda"
+                      type="text" placeholder="Nome do produtor"
                       value={produtor}
                       onChange={(e) => {
                         setProdutor(e.target.value);
@@ -295,10 +334,32 @@ export default function CalagemGessagemClient({ isPro = false, userName }: { isP
                       className={`w-full px-3 py-2 border rounded-lg text-sm transition-colors ${showValidationError && produtor.trim() === "" ? "border-red-500 bg-red-50" : "border-neutral-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"}`}
                     />
                   </div>
-                </div>
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">Propriedade / Fazenda</label>
+                    <input
+                      type="text" placeholder="Nome da propriedade/fazenda"
+                      value={propriedade}
+                      onChange={(e) => setPropriedade(e.target.value)}
+                      className="w-full px-3 py-2 border border-neutral-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 rounded-lg text-sm transition-colors"
+                    />
+                  </div>
+                <div>
+  <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">Nome do Laudo *</label>
+  <input
+    type="text"
+    placeholder="Ex: Calagem Fazenda X 2026"
+    value={nomeLaudo}
+    onChange={(e) => {
+      setNomeLaudo(e.target.value);
+      if (e.target.value.trim() !== "" && responsavelTecnico.trim() !== "" && produtor.trim() !== "" && propriedade.trim() !== "") setShowValidationError(false);
+    }}
+    className={`w-full px-3 py-2 border rounded-lg text-sm transition-colors ${showValidationError && nomeLaudo.trim() === "" ? "border-red-500 bg-red-50" : "border-neutral-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"}`}
+  />
+</div>
+</div>
                 {showValidationError && (
                   <p className="text-[11px] font-medium text-red-600 animate-pulse mt-1">
-                    ⚠️ O campo Produtor / Cliente é obrigatório.
+                    ⚠️ Os campos Responsável Técnico, Produtor / Cliente, Propriedade / Fazenda e Identificação do Laudo são obrigatórios.
                   </p>
                 )}
               </div>
@@ -337,8 +398,12 @@ export default function CalagemGessagemClient({ isPro = false, userName }: { isP
                 </div>
 
                 {!isPro ? null : !isFormValid ? (
-                  <div className="mt-3 p-3 rounded-xl bg-red-900/40 border border-red-500/30 text-xs text-red-200 relative z-10">
-                    ⚠️ Preencha o Produtor / Cliente para emitir o Laudo.
+                  <div className="mt-3 p-3 rounded-xl bg-red-900/40 border border-red-500/30 text-xs text-red-200 relative z-10 animate-pulse">
+                    ⚠️ Preencha o Responsável, Produtor e a Propriedade para emitir o Laudo.
+                  </div>
+                ) : !isSaved ? (
+                  <div className="mt-3 p-3 rounded-xl bg-amber-900/40 border border-amber-500/30 text-xs text-amber-200 relative z-10 animate-pulse">
+                    ⚠️ Clique em "Salvar" no topo para gravar no histórico e liberar a emissão do Laudo.
                   </div>
                 ) : null}
               </div>
@@ -539,7 +604,7 @@ export default function CalagemGessagemClient({ isPro = false, userName }: { isP
               </div>
             </div>
 
-            <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-100 grid grid-cols-2 gap-4 text-xs">
+            <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-100 grid grid-cols-3 gap-4 text-xs">
               <div>
                 <span className="text-neutral-400 block font-semibold uppercase">Responsável Técnico</span>
                 <span className="text-sm font-bold text-neutral-800 mt-0.5 block">{responsavelTecnico}</span>
@@ -548,6 +613,14 @@ export default function CalagemGessagemClient({ isPro = false, userName }: { isP
                 <span className="text-neutral-400 block font-semibold uppercase">Produtor / Cliente</span>
                 <span className="text-sm font-bold text-neutral-800 mt-0.5 block">{produtor}</span>
               </div>
+              <div>
+                <span className="text-neutral-400 block font-semibold uppercase">Propriedade / Fazenda</span>
+                <span className="text-sm font-bold text-neutral-800 mt-0.5 block">{propriedade || "Não Informada"}</span>
+              </div>
+            </div>
+            <div className="pt-2.5 border-t border-neutral-200/60 text-xs mb-4">
+              <span className="text-neutral-400 block font-semibold uppercase">Nome do Laudo</span>
+              <span className="text-sm font-bold text-neutral-800 mt-0.5 block">Calagem/Gessagem - {nomeLaudo}</span>
             </div>
 
             <h2 className="text-lg font-bold text-neutral-900 border-b pb-2 border-neutral-200">

@@ -58,7 +58,6 @@ export const reports = pgTable('reports', {
   area: text('area', { enum: ['agricultura', 'pecuaria', 'financeiro'] }).notNull(),
   inputs: jsonb('inputs').notNull(), // Inputs preenchidos pelo usuário (JSON)
   results: jsonb('results').notNull(), // Resultados calculados (JSON)
-  professionalData: jsonb('professional_data'), // Nome, CREA, etc. (Opcional)
   clientData: jsonb('client_data'), // PF/PJ, Nome, Endereço (Opcional)
   createdAt: timestamp('created_at').defaultNow().notNull(),
 }, (table) => ({

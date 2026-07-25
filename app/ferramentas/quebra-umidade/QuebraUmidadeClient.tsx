@@ -3,13 +3,26 @@
 import { useState, useRef, useEffect } from "react";
 
 import Link from "next/link";
-import { Calculator, FileText, Info, HelpCircle, Printer, ArrowLeft, Lock, Download } from "lucide-react";
+import { Calculator, FileText, Info, HelpCircle, Printer, ArrowLeft, Lock, Download, Save, Share2 } from "lucide-react";
+import ShareButton from "@/components/ShareButton";
+import { useSearchParams, useRouter } from "next/navigation";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
 export default function QuebraUmidadeClient({ isPro = false, userName }: { isPro?: boolean, userName?: string }) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const reportId = searchParams.get('reportId');
+  const autoDownload = searchParams.get('autoDownload');
+
+  // Loading state para salvar
+  const [loadingSave, setLoadingSave] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
+  const initialInputsRef = useRef<any>(null);
+
   // Inputs
   const [pesoInicial, setPesoInicial] = useState<number>(30000);
   const [umidadeInicial, setUmidadeInicial] = useState<number>(18);
@@ -20,6 +33,8 @@ export default function QuebraUmidadeClient({ isPro = false, userName }: { isPro
 
   // Laudo Técnico (Obrigatórios)
   const [produtor, setProdutor] = useState<string>("");
+  const [propriedade, setPropriedade] = useState<string>("");
+  const [nomeLaudo, setNomeLaudo] = useState<string>("");
   const [responsavelTecnico, setResponsavelTecnico] = useState<string>(userName || "");
   const [showValidationError, setShowValidationError] = useState<boolean>(false);
   const [profile, setProfile] = useState<{
@@ -41,6 +56,155 @@ export default function QuebraUmidadeClient({ isPro = false, userName }: { isPro
         .catch((err) => console.error("Erro ao buscar perfil complementar:", err));
     }
   }, [userName]);
+
+  // Carregar dados de um laudo antigo (Reabrir / Duplicar)
+  useEffect(() => {
+    if (reportId) {
+      fetch(`/api/reports/${reportId}`)
+        .then((res) => {
+          if (!res.ok) throw new Error("Erro ao carregar");
+          return res.json();
+        })
+        .then((data) => {
+          if (data && data.inputs && data.clientData) {
+            setPesoInicial(Number(data.inputs.pesoInicial || 0));
+            setUmidadeInicial(Number(data.inputs.umidadeInicial || 0));
+            setUmidadeDesejada(Number(data.inputs.umidadeDesejada || 0));
+            setImpurezaInicial(Number(data.inputs.impurezaInicial || 0));
+            setImpurezaTolerada(Number(data.inputs.impurezaTolerada || 0));
+            setPrecoSaca(Number(data.inputs.precoSaca || 0));
+            setProdutor(data.clientData.cliente || "");
+            setPropriedade(data.clientData.propriedade || "");
+            setNomeLaudo(data.clientData.nomeLaudo || "");
+            if (data.professionalData?.responsavel) {
+              setResponsavelTecnico(data.professionalData.responsavel);
+            }
+            // Salva como estado inicial carregado do banco
+            initialInputsRef.current = {
+              pesoInicial: Number(data.inputs.pesoInicial || 0),
+              umidadeInicial: Number(data.inputs.umidadeInicial || 0),
+              umidadeDesejada: Number(data.inputs.umidadeDesejada || 0),
+              impurezaInicial: Number(data.inputs.impurezaInicial || 0),
+              impurezaTolerada: Number(data.inputs.impurezaTolerada || 0),
+              precoSaca: Number(data.inputs.precoSaca || 0),
+              produtor: data.clientData.cliente || "",
+              propriedade: data.clientData.propriedade || "",
+              nomeLaudo: data.clientData.nomeLaudo || ""
+            };
+            setIsSaved(true);
+          }
+        })
+        .catch((err) => console.error("Erro ao carregar laudo do histórico:", err));
+    }
+  }, [reportId]);
+
+  // Monitorar alterações nos inputs para invalidar o status de salvo
+  useEffect(() => {
+    if (initialInputsRef.current) {
+      const isDifferent = 
+        pesoInicial !== initialInputsRef.current.pesoInicial ||
+        umidadeInicial !== initialInputsRef.current.umidadeInicial ||
+        umidadeDesejada !== initialInputsRef.current.umidadeDesejada ||
+        impurezaInicial !== initialInputsRef.current.impurezaInicial ||
+        impurezaTolerada !== initialInputsRef.current.impurezaTolerada ||
+        precoSaca !== initialInputsRef.current.precoSaca ||
+        produtor !== initialInputsRef.current.produtor ||
+        propriedade !== initialInputsRef.current.propriedade ||
+        nomeLaudo !== initialInputsRef.current.nomeLaudo;
+      
+      if (isDifferent) {
+        setIsSaved(false);
+        initialInputsRef.current = null;
+      }
+    } else {
+      setIsSaved(false);
+    }
+  }, [pesoInicial, umidadeInicial, umidadeDesejada, impurezaInicial, impurezaTolerada, precoSaca, produtor, propriedade, nomeLaudo]);
+
+  // Função para salvar o relatório no banco de dados
+  const saveReport = async () => {
+    try {
+      const res = await fetch('/api/reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          toolId: 'quebra-umidade',
+          area: 'agricultura',
+          inputs: {
+            pesoInicial,
+            umidadeInicial,
+            umidadeDesejada,
+            impurezaInicial,
+            impurezaTolerada,
+            precoSaca
+          },
+          results: {
+            pesoAposSecagem,
+            quebraUmidadeKg,
+            descontoImpurezaKg,
+            pesoFinalLiquido,
+            quebraTotalKg,
+            sacasIniciais,
+            sacasFinais,
+            sacasPerdidas,
+            valorTotalInicial,
+            valorTotalLiquido,
+            prejuizoFinanceiro,
+            pctLimpo,
+            pctAgua,
+            pctImpureza
+          },
+          professionalData: {
+            responsavel: responsavelTecnico,
+            creaCrtq: profile?.creaCrtq || "",
+            conselhoEstado: profile?.conselhoEstado || "",
+            logoUrl: profile?.logoUrl || ""
+          },
+          clientData: {
+            cliente: produtor,
+            propriedade: propriedade,
+            nomeLaudo: nomeLaudo
+          }
+        })
+      });
+      if (!res.ok) return false;
+      return true;
+    } catch (err) {
+      console.error("Erro ao salvar laudo no banco:", err);
+      return false;
+    }
+  };
+
+  // Botão para salvar explicitamente sem imprimir ou baixar
+  const handleSaveOnly = async () => {
+    if (!isFormValid) {
+      setShowValidationError(true);
+      return;
+    }
+    setShowValidationError(false);
+    setLoadingSave(true);
+    const saved = await saveReport();
+    setLoadingSave(false);
+
+    if (saved) {
+      initialInputsRef.current = {
+        pesoInicial,
+        umidadeInicial,
+        umidadeDesejada,
+        impurezaInicial,
+        impurezaTolerada,
+        precoSaca,
+        produtor,
+        propriedade,
+        nomeLaudo
+      };
+      setIsSaved(true);
+      router.refresh();
+      alert("✅ Laudo técnico gravado no seu histórico com sucesso!");
+    } else {
+      alert("⚠️ Não foi possível salvar o laudo na nuvem (sem conexão à internet ou sessão expirada). O laudo não pôde ser gravado no seu histórico online.");
+    }
+  };
 
   const reportRef = useRef<HTMLDivElement>(null);
 
@@ -85,10 +249,10 @@ export default function QuebraUmidadeClient({ isPro = false, userName }: { isPro
   const pctImpureza = (descontoImpurezaKg / pesoInicial) * 100;
 
   // Validação dos Campos Obrigatórios
-  const isFormValid = produtor.trim() !== "" && responsavelTecnico.trim() !== "";
+  const isFormValid = produtor.trim() !== "" && responsavelTecnico.trim() !== "" && propriedade.trim() !== "" && nomeLaudo.trim() !== "";
 
   // Exportar para PDF
-  const handleExportPDF = async () => {
+  const handleExportPDF = async (skipSave = false) => {
     if (!isPro) {
       window.location.href = "/#planos";
       return;
@@ -98,6 +262,14 @@ export default function QuebraUmidadeClient({ isPro = false, userName }: { isPro
       return;
     }
     setShowValidationError(false);
+
+    if (!skipSave) {
+      const saved = await saveReport();
+      if (!saved) {
+        const proceed = window.confirm("⚠️ Não foi possível salvar o laudo no banco de dados (provavelmente você está offline ou sem sinal). Deseja prosseguir com a geração do PDF local mesmo assim?");
+        if (!proceed) return;
+      }
+    }
 
     if (!reportRef.current) return;
     
@@ -128,6 +300,8 @@ export default function QuebraUmidadeClient({ isPro = false, userName }: { isPro
       }
       
       pdf.save(`laudo-quebra-umidade-${produtor.replace(/\s+/g, "-").toLowerCase()}.pdf`);
+      const blob = pdf.output('blob');
+      setPdfBlob(blob);
     } catch (error) {
       console.error("Erro ao gerar PDF:", error);
       alert("Houve um problema ao gerar o PDF.");
@@ -135,7 +309,7 @@ export default function QuebraUmidadeClient({ isPro = false, userName }: { isPro
   };
 
   // Impressão Direta
-  const handlePrint = () => {
+  const handlePrint = async () => {
     if (!isPro) {
       window.location.href = "/#planos";
       return;
@@ -145,8 +319,26 @@ export default function QuebraUmidadeClient({ isPro = false, userName }: { isPro
       return;
     }
     setShowValidationError(false);
+    
+    const saved = await saveReport();
+    if (!saved) {
+      const proceed = window.confirm("⚠️ Não foi possível salvar o laudo no banco de dados (provavelmente você está offline ou sem sinal). Deseja abrir a tela de impressão local mesmo assim?");
+      if (!proceed) return;
+    }
     window.print();
   };
+
+  // Disparo automático do PDF se autoDownload=true estiver na URL
+  useEffect(() => {
+    if (reportId && autoDownload === 'true' && isPro && isFormValid) {
+      const timer = setTimeout(() => {
+        handleExportPDF(true).then(() => {
+          router.push('/dashboard/laudos');
+        });
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [reportId, autoDownload, isPro, isFormValid]);
 
   return (
     <div className={`min-h-screen bg-neutral-50/50 flex flex-col ${!isPro ? "select-none" : ""}`} onContextMenu={(e) => !isPro && e.preventDefault()}>
@@ -160,10 +352,16 @@ export default function QuebraUmidadeClient({ isPro = false, userName }: { isPro
         {/* Cabeçalho de Navegação e Título */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <Link href="/dashboard" className="inline-flex items-center text-sm font-medium text-neutral-500 hover:text-neutral-900 mb-2 transition-colors">
+            <button
+              onClick={() => {
+                router.push('/dashboard');
+                router.refresh();
+              }}
+              className="inline-flex items-center text-sm font-medium text-neutral-500 hover:text-neutral-900 mb-2 transition-colors"
+            >
               <ArrowLeft className="w-4 h-4 mr-1" />
               Voltar ao Dashboard
-            </Link>
+            </button>
             <h1 className="text-2xl font-bold text-neutral-900 tracking-tight">
               Simulador de Quebra de Umidade
             </h1>
@@ -179,8 +377,16 @@ export default function QuebraUmidadeClient({ isPro = false, userName }: { isPro
             {isPro ? (
               <>
                 <button
+                  onClick={handleSaveOnly}
+                  disabled={!isFormValid || loadingSave}
+                  className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-emerald-50 border border-emerald-200 rounded-lg text-sm font-bold text-emerald-800 hover:bg-emerald-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  {loadingSave ? "Salvando..." : "Salvar"}
+                </button>
+                <button
                   onClick={handlePrint}
-                  disabled={!isFormValid}
+                  disabled={!isFormValid || !isSaved}
                   className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-white border border-neutral-200 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Printer className="w-4 h-4 mr-2" />
@@ -188,15 +394,26 @@ export default function QuebraUmidadeClient({ isPro = false, userName }: { isPro
                 </button>
                 <button
                   onClick={handleExportPDF}
-                  disabled={!isFormValid}
+                  disabled={!isFormValid || !isSaved}
                   className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-emerald-600 border border-transparent rounded-lg text-sm font-bold text-white hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Download className="w-4 h-4 mr-2" />
                   Gerar PDF
                 </button>
+                <ShareButton
+                  pdfBlob={pdfBlob}
+                  fileName={`laudo-quebra-umidade-${produtor.replace(/\s+/g, "-").toLowerCase()}`}
+                  nomeLaudo={nomeLaudo}
+                  responsavel={responsavelTecnico}
+                  disabled={!isFormValid || !pdfBlob}
+                />
               </>
             ) : (
               <>
+                <Link href="/#planos" className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm font-medium text-neutral-400 hover:bg-neutral-100 transition-colors">
+                  <Lock className="w-4 h-4 mr-2" />
+                  Salvar
+                </Link>
                 <Link href="/#planos" className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-neutral-100 border border-neutral-200 rounded-lg text-sm font-medium text-neutral-500 hover:bg-neutral-200 transition-colors">
                   <Lock className="w-4 h-4 mr-2" />
                   Imprimir
@@ -204,6 +421,10 @@ export default function QuebraUmidadeClient({ isPro = false, userName }: { isPro
                 <Link href="/#planos" className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-emerald-600/50 border border-transparent rounded-lg text-sm font-bold text-white hover:bg-emerald-600/70 transition-colors">
                   <Lock className="w-4 h-4 mr-2" />
                   Gerar PDF
+                </Link>
+                <Link href="/#planos" className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-amber-600/50 border border-transparent rounded-lg text-sm font-bold text-white hover:bg-amber-600/70 transition-colors">
+                  <Lock className="w-4 h-4 mr-2" />
+                  Compartilhar
                 </Link>
               </>
             )}
@@ -326,7 +547,7 @@ export default function QuebraUmidadeClient({ isPro = false, userName }: { isPro
                 <h3 className="text-xs font-bold text-neutral-800 uppercase tracking-wider flex items-center gap-1">
                   Laudo Técnico <span className="text-red-500 font-bold">*</span>
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">Responsável Técnico *</label>
                     <input
@@ -336,7 +557,7 @@ export default function QuebraUmidadeClient({ isPro = false, userName }: { isPro
                       readOnly={!!userName}
                       onChange={(e) => {
                         setResponsavelTecnico(e.target.value);
-                        if(produtor.trim() !== "" && e.target.value.trim() !== "") setShowValidationError(false);
+                        if(produtor.trim() !== "" && e.target.value.trim() !== "" && propriedade.trim() !== "" && nomeLaudo.trim() !== "") setShowValidationError(false);
                       }}
                       className={`w-full px-3 py-2 border rounded-lg text-sm transition-colors ${showValidationError && responsavelTecnico.trim() === "" ? "border-red-500 bg-red-50" : "border-neutral-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"} ${userName ? "bg-neutral-100 text-neutral-500 cursor-not-allowed" : ""}`}
                     />
@@ -345,19 +566,45 @@ export default function QuebraUmidadeClient({ isPro = false, userName }: { isPro
                     <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">Produtor / Cliente *</label>
                     <input
                       type="text"
-                      placeholder="Nome do produtor ou fazenda"
+                      placeholder="Nome do produtor"
                       value={produtor}
                       onChange={(e) => {
                         setProdutor(e.target.value);
-                        if(e.target.value.trim() !== "" && responsavelTecnico.trim() !== "") setShowValidationError(false);
+                        if(e.target.value.trim() !== "" && responsavelTecnico.trim() !== "" && propriedade.trim() !== "" && nomeLaudo.trim() !== "") setShowValidationError(false);
                       }}
                       className={`w-full px-3 py-2 border rounded-lg text-sm transition-colors ${showValidationError && produtor.trim() === "" ? "border-red-500 bg-red-50" : "border-neutral-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"}`}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">Propriedade / Fazenda *</label>
+                    <input
+                      type="text"
+                      placeholder="Nome da propriedade/fazenda"
+                      value={propriedade}
+                      onChange={(e) => {
+                        setPropriedade(e.target.value);
+                        if(e.target.value.trim() !== "" && responsavelTecnico.trim() !== "" && produtor.trim() !== "" && nomeLaudo.trim() !== "") setShowValidationError(false);
+                      }}
+                      className={`w-full px-3 py-2 border rounded-lg text-sm transition-colors ${showValidationError && propriedade.trim() === "" ? "border-red-500 bg-red-50" : "border-neutral-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"}`}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">Nome do Laudo *</label>
+                    <input
+                      type="text"
+                      placeholder="Ex: Talhão 4, Safra 2026"
+                      value={nomeLaudo}
+                      onChange={(e) => {
+                        setNomeLaudo(e.target.value);
+                        if(e.target.value.trim() !== "" && responsavelTecnico.trim() !== "" && produtor.trim() !== "" && propriedade.trim() !== "") setShowValidationError(false);
+                      }}
+                      className={`w-full px-3 py-2 border rounded-lg text-sm transition-colors ${showValidationError && nomeLaudo.trim() === "" ? "border-red-500 bg-red-50" : "border-neutral-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"}`}
                     />
                   </div>
                 </div>
                 {showValidationError && (
                   <p className="text-[11px] font-medium text-red-600 animate-pulse mt-1">
-                    ⚠️ O campo Produtor / Cliente é obrigatório.
+                    ⚠️ Os campos Responsável Técnico, Produtor / Cliente, Propriedade / Fazenda e Identificação do Laudo são obrigatórios.
                   </p>
                 )}
               </div>
@@ -397,8 +644,12 @@ export default function QuebraUmidadeClient({ isPro = false, userName }: { isPro
                 </div>
 
                 {!isPro ? null : !isFormValid ? (
-                  <div className="mt-3 p-3 rounded-xl bg-red-900/40 border border-red-500/30 text-xs text-red-200 relative z-10">
-                    ⚠️ Preencha o Produtor / Cliente para emitir o Laudo.
+                  <div className="mt-3 p-3 rounded-xl bg-red-900/40 border border-red-500/30 text-xs text-red-200 relative z-10 animate-pulse">
+                    ⚠️ Preencha Responsável, Produtor, Propriedade e Identificação para emitir o Laudo.
+                  </div>
+                ) : !isSaved ? (
+                  <div className="mt-3 p-3 rounded-xl bg-amber-900/40 border border-amber-500/30 text-xs text-amber-200 relative z-10 animate-pulse">
+                    ⚠️ Clique em \"Salvar\" no topo para gravar no histórico e liberar a emissão do Laudo.
                   </div>
                 ) : null}
               </div>
@@ -597,21 +848,31 @@ export default function QuebraUmidadeClient({ isPro = false, userName }: { isPro
             </div>
 
             {/* Dados do Responsável Técnico e Produtor */}
-            <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-100 grid grid-cols-2 gap-4 text-xs">
-              <div>
-                <span className="text-neutral-400 block font-semibold uppercase">Responsável Técnico</span>
-                <span className="text-sm font-bold text-neutral-800 mt-0.5 block flex flex-col">
-                  <span>{responsavelTecnico}</span>
-                  {profile?.creaCrtq && (
-                    <span className="text-[10px] text-neutral-500 font-bold tracking-normal mt-0.5 normal-case">
-                      CREA/CRTQ: {profile.creaCrtq}/{profile.conselhoEstado}
-                    </span>
-                  )}
-                </span>
+            <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-100 text-xs space-y-3">
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <span className="text-neutral-400 block font-semibold uppercase">Responsável Técnico</span>
+                  <span className="text-sm font-bold text-neutral-800 mt-0.5 block flex flex-col">
+                    <span>{responsavelTecnico}</span>
+                    {profile?.creaCrtq && (
+                      <span className="text-[10px] text-neutral-500 font-bold tracking-normal mt-0.5 normal-case">
+                        CREA/CRTQ: {profile.creaCrtq}/{profile.conselhoEstado}
+                      </span>
+                    )}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-neutral-400 block font-semibold uppercase">Produtor / Cliente</span>
+                  <span className="text-sm font-bold text-neutral-800 mt-0.5 block">{produtor}</span>
+                </div>
+                <div>
+                  <span className="text-neutral-400 block font-semibold uppercase">Propriedade / Fazenda</span>
+                  <span className="text-sm font-bold text-neutral-800 mt-0.5 block">{propriedade}</span>
+                </div>
               </div>
-              <div>
-                <span className="text-neutral-400 block font-semibold uppercase">Produtor / Cliente</span>
-                <span className="text-sm font-bold text-neutral-800 mt-0.5 block">{produtor}</span>
+              <div className="pt-2.5 border-t border-neutral-200/60">
+                <span className="text-neutral-400 block font-semibold uppercase">Nome do Laudo</span>
+                <span className="text-sm font-bold text-neutral-800 mt-0.5 block">Quebra de Umidade - {nomeLaudo}</span>
               </div>
             </div>
 

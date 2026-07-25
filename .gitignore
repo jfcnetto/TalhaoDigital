@@ -35,3 +35,5 @@ skills-lock.json
 
 # project documentation (local copy)
 /DOC/
+
+testsprite_tests\tmp\config.json

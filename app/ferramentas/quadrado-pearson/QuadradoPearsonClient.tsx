@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { ArrowLeft, Printer, Lock, Download, Info, HelpCircle, Scale, Dna } from "lucide-react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { ArrowLeft, Printer, Lock, Download, Info, HelpCircle, Scale, Dna, Save, Share2 } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import ShareButton from "@/components/ShareButton";
 
 interface QuadradoPearsonClientProps {
   isPro: boolean;
@@ -44,6 +46,17 @@ const INGREDIENTES_B: Record<IngredienteBPreset, { nome: string; pb: number }> =
 };
 
 export default function QuadradoPearsonClient({ isPro, userName }: QuadradoPearsonClientProps) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const reportId = searchParams.get('reportId');
+  const autoDownload = searchParams.get('autoDownload');
+
+  // Loading state para salvar
+  const [loadingSave, setLoadingSave] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
+  const initialInputsRef = useRef<any>(null);
+
   // Configuração Alvo
   const [exigenciaPreset, setExigenciaPreset] = useState<ExigenciaPreset>("vaca_leite_16");
   const [pbAlvo, setPbAlvo] = useState<number>(16);
@@ -64,8 +77,102 @@ export default function QuadradoPearsonClient({ isPro, userName }: QuadradoPears
   // Identificação do Laudo
   const [responsavel, setResponsavel] = useState<string>(userName || "");
   const [cliente, setCliente] = useState<string>("");
+  const [propriedade, setPropriedade] = useState<string>("");
+  const [nomeLaudo, setNomeLaudo] = useState<string>("");
+  const [profile, setProfile] = useState<{
+    creaCrtq?: string;
+    conselhoEstado?: string;
+    logoUrl?: string;
+  } | null>(null);
+
   const [showValidationError, setShowValidationError] = useState<boolean>(false);
   const [gerandoPdf, setGerandoPdf] = useState(false);
+
+  useEffect(() => {
+    if (userName) {
+      fetch("/api/user/profile")
+        .then((res) => res.json())
+        .then((data) => {
+          setProfile(data);
+          if (data.name) setResponsavel(data.name);
+        })
+        .catch((err) => console.error("Erro ao buscar perfil complementar:", err));
+    }
+  }, [userName]);
+
+  // Carregar dados de um laudo antigo (Reabrir / Duplicar)
+  useEffect(() => {
+    if (reportId) {
+      fetch(`/api/reports/${reportId}`)
+        .then((res) => { if (!res.ok) throw new Error("Erro ao carregar"); return res.json(); })
+        .then((data) => {
+          if (data && data.inputs && data.clientData) {
+            setExigenciaPreset(data.inputs.exigenciaPreset || "vaca_leite_16");
+            setPbAlvo(Number(data.inputs.pbAlvo || 16));
+            setIngAPreset(data.inputs.ingAPreset || "farelo_soja");
+            setIngANome(data.inputs.ingANome || "");
+            setIngAPb(Number(data.inputs.ingAPb || 45));
+            setIngBPreset(data.inputs.ingBPreset || "milho_moido");
+            setIngBNome(data.inputs.ingBNome || "");
+            setIngBPb(Number(data.inputs.ingBPb || 9));
+            setMisturaTotal(Number(data.inputs.misturaTotal || 1000));
+            setCliente(data.clientData.cliente || "");
+            setPropriedade(data.clientData.propriedade || "");
+            setNomeLaudo(data.clientData.nomeLaudo || "");
+            if (data.professionalData?.responsavel) setResponsavel(data.professionalData.responsavel);
+            initialInputsRef.current = {
+              exigenciaPreset: data.inputs.exigenciaPreset || "vaca_leite_16",
+              pbAlvo: Number(data.inputs.pbAlvo || 16),
+              ingAPreset: data.inputs.ingAPreset || "farelo_soja",
+              ingANome: data.inputs.ingANome || "",
+              ingAPb: Number(data.inputs.ingAPb || 45),
+              ingBPreset: data.inputs.ingBPreset || "milho_moido",
+              ingBNome: data.inputs.ingBNome || "",
+              ingBPb: Number(data.inputs.ingBPb || 9),
+              misturaTotal: Number(data.inputs.misturaTotal || 1000),
+              cliente: data.clientData.cliente || "",
+              propriedade: data.clientData.propriedade || "",
+              nomeLaudo: data.clientData.nomeLaudo || ""
+            };
+            setIsSaved(true);
+          }
+        })
+        .catch((err) => console.error("Erro ao carregar laudo do histórico:", err));
+    }
+  }, [reportId]);
+
+  // Monitorar alterações para invalidar status de salvo
+  useEffect(() => {
+    if (initialInputsRef.current) {
+      const isDifferent =
+        exigenciaPreset !== initialInputsRef.current.exigenciaPreset ||
+        pbAlvo !== initialInputsRef.current.pbAlvo ||
+        ingAPreset !== initialInputsRef.current.ingAPreset ||
+        ingANome !== initialInputsRef.current.ingANome ||
+        ingAPb !== initialInputsRef.current.ingAPb ||
+        ingBPreset !== initialInputsRef.current.ingBPreset ||
+        ingBNome !== initialInputsRef.current.ingBNome ||
+        ingBPb !== initialInputsRef.current.ingBPb ||
+        misturaTotal !== initialInputsRef.current.misturaTotal ||
+        cliente !== initialInputsRef.current.cliente ||
+        propriedade !== initialInputsRef.current.propriedade ||
+        nomeLaudo !== initialInputsRef.current.nomeLaudo;
+      if (isDifferent) { setIsSaved(false); initialInputsRef.current = null; }
+    } else { setIsSaved(false); }
+  }, [exigenciaPreset, pbAlvo, ingAPreset, ingANome, ingAPb, ingBPreset, ingBNome, ingBPb, misturaTotal, cliente, propriedade, nomeLaudo]);
+
+  // Proteção Anti-PrintScreen
+  useEffect(() => {
+    if (isPro) return;
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === "PrintScreen") {
+        try { navigator.clipboard?.writeText(""); } catch (err) {}
+        alert("🔒 A captura de tela deste relatório é bloqueada no Plano Gratuito. Assine o Plano Pro!");
+      }
+    };
+    window.addEventListener("keyup", handleKeyUp);
+    return () => window.removeEventListener("keyup", handleKeyUp);
+  }, [isPro]);
 
   // ======================================================
   // LÓGICA E CÁLCULOS DO PEARSOM SQUARE
@@ -85,12 +192,56 @@ export default function QuadradoPearsonClient({ isPro, userName }: QuadradoPears
   const massaA = (pctA / 100) * misturaTotal;
   const massaB = (pctB / 100) * misturaTotal;
 
-  const isFormValid = responsavel.trim() !== "" && cliente.trim() !== "";
+  const isFormValid = responsavel.trim() !== "" && cliente.trim() !== "" && propriedade.trim() !== "" && nomeLaudo.trim() !== "";
+
+  // Função para salvar o relatório no banco de dados
+  const saveReport = async () => {
+    try {
+      const res = await fetch('/api/reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          toolId: 'quadrado-pearson',
+          area: 'pecuaria',
+          inputs: { exigenciaPreset, pbAlvo, ingAPreset, ingANome, ingAPb, ingBPreset, ingBNome, ingBPb, misturaTotal },
+          results: { possivel, partesA, partesB, totalPartes, pctA, pctB, massaA, massaB },
+          professionalData: {
+            responsavel,
+            creaCrtq: profile?.creaCrtq || "",
+            conselhoEstado: profile?.conselhoEstado || "",
+            logoUrl: profile?.logoUrl || ""
+          },
+          clientData: { cliente, propriedade, nomeLaudo }
+        })
+      });
+      if (!res.ok) return false;
+      return true;
+    } catch (err) {
+      console.error("Erro ao salvar laudo no banco:", err);
+      return false;
+    }
+  };
+
+  const handleSaveOnly = async () => {
+    if (!isFormValid) { setShowValidationError(true); return; }
+    setShowValidationError(false);
+    setLoadingSave(true);
+    const saved = await saveReport();
+    setLoadingSave(false);
+    if (saved) {
+      initialInputsRef.current = { exigenciaPreset, pbAlvo, ingAPreset, ingANome, ingAPb, ingBPreset, ingBNome, ingBPb, misturaTotal, cliente, propriedade, nomeLaudo };
+      setIsSaved(true);
+      router.refresh();
+      alert("✅ Laudo técnico gravado no seu histórico com sucesso!");
+    } else {
+      alert("⚠️ Não foi possível salvar o laudo na nuvem.");
+    }
+  };
 
   // ======================================================
   // GERAÇÃO DE PDF E IMPRESSÃO
   // ======================================================
-  const handleImprimir = () => {
+  const handleImprimir = async () => {
     if (!isPro) {
       window.location.href = "/#planos";
       return;
@@ -100,10 +251,15 @@ export default function QuadradoPearsonClient({ isPro, userName }: QuadradoPears
       return;
     }
     setShowValidationError(false);
+    const saved = await saveReport();
+    if (!saved) {
+      const proceed = window.confirm("⚠️ Não foi possível salvar o laudo no banco de dados. Deseja abrir a tela de impressão local mesmo assim?");
+      if (!proceed) return;
+    }
     window.print();
   };
 
-  const handleGerarPdf = async () => {
+  const handleGerarPdf = async (skipSave = false) => {
     if (!isPro) {
       window.location.href = "/#planos";
       return;
@@ -118,6 +274,13 @@ export default function QuadradoPearsonClient({ isPro, userName }: QuadradoPears
     setGerandoPdf(true);
 
     try {
+      if (!skipSave) {
+        const saved = await saveReport();
+        if (!saved) {
+          const proceed = window.confirm("⚠️ Não foi possível salvar o laudo no banco de dados. Deseja prosseguir com a geração do PDF local mesmo assim?");
+          if (!proceed) return;
+        }
+      }
       const element = document.getElementById("pdf-content");
       if (!element) return;
 
@@ -138,6 +301,8 @@ export default function QuadradoPearsonClient({ isPro, userName }: QuadradoPears
       const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
       pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      const blob = pdf.output('blob');
+      setPdfBlob(blob);
       pdf.save(`Pearson-Racao-${cliente || "Laudo"}.pdf`);
     } catch (error) {
       console.error("Erro ao gerar PDF:", error);
@@ -146,6 +311,18 @@ export default function QuadradoPearsonClient({ isPro, userName }: QuadradoPears
       setGerandoPdf(false);
     }
   };
+
+  // Disparo automático do PDF se autoDownload=true estiver na URL
+  useEffect(() => {
+    if (reportId && autoDownload === 'true' && isPro && isFormValid) {
+      const timer = setTimeout(() => {
+        handleGerarPdf(true).then(() => {
+          router.push('/dashboard/laudos');
+        });
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [reportId, autoDownload, isPro, isFormValid]);
 
   // ======================================================
   // DIAGRAMA SVG DO PEARSOM SQUARE
@@ -264,8 +441,16 @@ export default function QuadradoPearsonClient({ isPro, userName }: QuadradoPears
             {isPro ? (
               <>
                 <button
+                  onClick={handleSaveOnly}
+                  disabled={!isFormValid || loadingSave}
+                  className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-emerald-50 border border-emerald-200 rounded-lg text-sm font-bold text-emerald-800 hover:bg-emerald-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  {loadingSave ? "Salvando..." : "Salvar"}
+                </button>
+                <button
                   onClick={handleImprimir}
-                  disabled={!isFormValid || !possivel}
+                  disabled={!isFormValid || !possivel || !isSaved}
                   className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-white border border-neutral-300 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Printer className="w-4 h-4 mr-2" />
@@ -273,7 +458,7 @@ export default function QuadradoPearsonClient({ isPro, userName }: QuadradoPears
                 </button>
                 <button
                   onClick={handleGerarPdf}
-                  disabled={!isFormValid || !possivel || gerandoPdf}
+                  disabled={!isFormValid || !possivel || !isSaved || gerandoPdf}
                   className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-emerald-600 border border-transparent rounded-lg text-sm font-bold text-white hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {gerandoPdf ? (
@@ -283,9 +468,20 @@ export default function QuadradoPearsonClient({ isPro, userName }: QuadradoPears
                   )}
                   {gerandoPdf ? "Gerando..." : "Exportar PDF"}
                 </button>
+                <ShareButton
+                  pdfBlob={pdfBlob}
+                  fileName={`Pearson-Racao-${cliente || "Laudo"}`}
+                  nomeLaudo={nomeLaudo}
+                  responsavel={responsavel}
+                  disabled={!isFormValid || !pdfBlob}
+                />
               </>
             ) : (
               <>
+                <Link href="/#planos" className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-neutral-50 border border-neutral-200 rounded-lg text-sm font-medium text-neutral-400 hover:bg-neutral-100 transition-colors">
+                  <Lock className="w-4 h-4 mr-2" />
+                  Salvar
+                </Link>
                 <Link href="/#planos" className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-neutral-100 border border-neutral-200 rounded-lg text-sm font-medium text-neutral-500 hover:bg-neutral-200 transition-colors">
                   <Lock className="w-4 h-4 mr-2" />
                   Imprimir
@@ -293,6 +489,10 @@ export default function QuadradoPearsonClient({ isPro, userName }: QuadradoPears
                 <Link href="/#planos" className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-emerald-600/50 border border-transparent rounded-lg text-sm font-bold text-white hover:bg-emerald-600/70 transition-colors">
                   <Lock className="w-4 h-4 mr-2" />
                   Exportar PDF
+                </Link>
+                <Link href="/#planos" className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-amber-600/50 border border-transparent rounded-lg text-sm font-bold text-white hover:bg-amber-600/70 transition-colors">
+                  <Lock className="w-4 h-4 mr-2" />
+                  Compartilhar
                 </Link>
               </>
             )}
@@ -507,28 +707,61 @@ export default function QuadradoPearsonClient({ isPro, userName }: QuadradoPears
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">Responsável Técnico</label>
+                  <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">Responsável Técnico *</label>
                   <input
                     type="text"
                     value={responsavel}
-                    readOnly
-                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm bg-neutral-100 text-neutral-500 cursor-not-allowed"
+                    readOnly={!!userName}
+                    onChange={(e) => setResponsavel(e.target.value)}
+                    placeholder="Nome do agrônomo ou técnico"
+                    className={`w-full px-3 py-2 border rounded-lg text-sm transition-colors ${showValidationError && responsavel.trim() === "" ? "border-red-500 bg-red-50" : "border-neutral-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"} ${userName ? "bg-neutral-100 text-neutral-500 cursor-not-allowed" : ""}`}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">Produtor / Cliente</label>
+                  <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">Produtor / Cliente *</label>
                   <input
                     type="text"
                     value={cliente}
                     onChange={(e) => {
                       setCliente(e.target.value);
-                      if (showValidationError && e.target.value.trim() !== "") setShowValidationError(false);
+                      if (e.target.value.trim() !== "" && responsavel.trim() !== "" && propriedade.trim() !== "" && nomeLaudo.trim() !== "") setShowValidationError(false);
                     }}
-                    placeholder="Nome do produtor ou empresa"
-                    className="w-full px-3 py-2 border border-neutral-300 rounded-lg text-sm bg-white"
+                    placeholder="Nome do produtor ou fazenda"
+                    className={`w-full px-3 py-2 border rounded-lg text-sm transition-colors ${showValidationError && cliente.trim() === "" ? "border-red-500 bg-red-50" : "border-neutral-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"}`}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">Propriedade / Fazenda *</label>
+                  <input
+                    type="text"
+                    value={propriedade}
+                    onChange={(e) => {
+                      setPropriedade(e.target.value);
+                      if (e.target.value.trim() !== "" && responsavel.trim() !== "" && cliente.trim() !== "" && nomeLaudo.trim() !== "") setShowValidationError(false);
+                    }}
+                    placeholder="Nome da propriedade/fazenda"
+                    className={`w-full px-3 py-2 border rounded-lg text-sm transition-colors ${showValidationError && propriedade.trim() === "" ? "border-red-500 bg-red-50" : "border-neutral-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"}`}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">Nome do Laudo *</label>
+                  <input
+                    type="text"
+                    value={nomeLaudo}
+                    onChange={(e) => {
+                      setNomeLaudo(e.target.value);
+                      if (e.target.value.trim() !== "" && responsavel.trim() !== "" && cliente.trim() !== "" && propriedade.trim() !== "") setShowValidationError(false);
+                    }}
+                    placeholder="Ex: Ração Lactação Safra 2026"
+                    className={`w-full px-3 py-2 border rounded-lg text-sm transition-colors ${showValidationError && nomeLaudo.trim() === "" ? "border-red-500 bg-red-50" : "border-neutral-300 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"}`}
                   />
                 </div>
               </div>
+              {showValidationError && (
+                <p className="text-[11px] font-medium text-red-600 animate-pulse mt-2">
+                  ⚠️ Os campos Responsável Técnico, Produtor / Cliente, Propriedade / Fazenda e Nome do Laudo são obrigatórios.
+                </p>
+              )}
             </div>
 
           </div>
@@ -564,15 +797,10 @@ export default function QuadradoPearsonClient({ isPro, userName }: QuadradoPears
                   <div className="py-6 text-center text-red-200">
                     <p className="text-lg font-extrabold">⚠️ Formulação Inviável</p>
                     <p className="text-xs text-red-300 mt-2 leading-relaxed">
-                      A proteína alvo ({pbAlvo}%) deve estar obrigatoriamente compreendida entre a do ingrediente de menor valor ({pbMin}%) e o de maior valor ({pbMax}%).
-                    </p>
-                  </div>
-                )}
-
-                {/* Mensagens de erro/validação */}
+                      A proteína alvo ({pbAlvo}%) deve estar obrigatoriamente compreendida entre a do ingrediente                 {/* Mensagens de erro/validação */}
                 {!isPro ? null : !isFormValid ? (
                   <div className="mt-4 p-3 rounded-xl bg-red-900/40 border border-red-500/30 text-xs text-red-200 relative z-10">
-                    ⚠️ Preencha o Produtor / Cliente para emitir o Laudo.
+                    ⚠️ Preencha todos os campos obrigatórios para emitir o Laudo.
                   </div>
                 ) : null}
               </div>
@@ -727,6 +955,8 @@ export default function QuadradoPearsonClient({ isPro, userName }: QuadradoPears
 
                   <tr><td className="p-2 border border-neutral-200">Responsável Técnico</td><td className="p-2 text-right font-bold border border-neutral-200">{responsavel}</td></tr>
                   <tr><td className="p-2 border border-neutral-200">Produtor / Cliente</td><td className="p-2 text-right font-bold border border-neutral-200">{cliente}</td></tr>
+                  <tr><td className="p-2 border border-neutral-200">Propriedade / Fazenda</td><td className="p-2 text-right font-bold border border-neutral-200">{propriedade || "Não informada"}</td></tr>
+                  <tr><td className="p-2 border border-neutral-200">Nome do Laudo</td><td className="p-2 text-right font-bold border border-neutral-200">{nomeLaudo || "Não informado"}</td></tr>
                 </tbody>
               </table>
             </div>

@@ -591,7 +591,7 @@ export default function CalagemGessagemClient({ isPro = false, userName }: { isP
       {/* ------------------------------------------------------------- */}
       {isPro && (
         <div style={{ position: "absolute", left: "-9999px", top: "-9999px" }}>
-          <div id="pdf-content" ref={reportRef} className="w-[210mm] bg-white text-neutral-900 p-10 font-sans print-only-container min-h-[270mm] flex flex-col">
+          <div id="pdf-content" ref={reportRef} className="w-[210mm] bg-white text-neutral-900 p-10 print-only-container min-h-[270mm] flex flex-col">
           <div className="space-y-6">
             <div className="flex justify-between items-center border-b pb-6 border-neutral-200">
               <div className="space-y-2">

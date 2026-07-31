@@ -5,6 +5,8 @@ import { db } from '@/db';
 import { subscriptions } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: Request) {
   try {
     const { userId } = auth();

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { ArrowLeft, Printer, Lock, Download, Info, HelpCircle, Upload, CheckCircle2, Save, Share2 } from "lucide-react";
+import { ArrowLeft, Printer, Lock, Download, Info, HelpCircle, Upload, CheckCircle2, Save } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import Header from "@/components/Header";
@@ -166,9 +166,9 @@ export default function ConversorGpsClient({ isPro, userName }: ConversorGpsClie
           results: { totalPontos, pctPontosValidos, pctPontosDescartados },
           professionalData: {
             responsavel,
-            creaCrtq: profile?.creaCrtq || "",
-            conselhoEstado: profile?.conselhoEstado || "",
-            logoUrl: profile?.logoUrl || ""
+            creaCrtq: "",
+            conselhoEstado: "",
+            logoUrl: ""
           },
           clientData: { cliente, propriedade, nomeLaudo }
         })
@@ -311,6 +311,7 @@ export default function ConversorGpsClient({ isPro, userName }: ConversorGpsClie
             {isPro ? (
               <>
                 <button
+                  type="button"
                   onClick={handleSaveOnly}
                   disabled={!isFormValid || loadingSave}
                   className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-emerald-50 border border-emerald-200 rounded-lg text-sm font-bold text-emerald-800 hover:bg-emerald-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -319,6 +320,7 @@ export default function ConversorGpsClient({ isPro, userName }: ConversorGpsClie
                   {loadingSave ? "Salvando..." : "Salvar"}
                 </button>
                 <button
+                  type="button"
                   onClick={handleImprimir}
                   disabled={!isFormValid || !isSaved}
                   className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-white border border-neutral-200 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -327,7 +329,8 @@ export default function ConversorGpsClient({ isPro, userName }: ConversorGpsClie
                   Imprimir
                 </button>
                 <button
-                  onClick={handleGerarPdf}
+                  type="button"
+                  onClick={() => handleGerarPdf()}
                   disabled={!isFormValid || !isSaved || gerandoPdf}
                   className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-emerald-600 border border-transparent rounded-lg text-sm font-bold text-white hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >

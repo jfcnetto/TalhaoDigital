@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 
 import Link from "next/link";
-import { Calculator, FileText, Info, HelpCircle, Printer, ArrowLeft, Lock, Download, Save, Share2 } from "lucide-react";
+import { Calculator, FileText, Info, HelpCircle, Printer, ArrowLeft, Lock, Download, Save } from "lucide-react";
 import ShareButton from "@/components/ShareButton";
 import { useSearchParams, useRouter } from "next/navigation";
 import jsPDF from "jspdf";
@@ -156,9 +156,9 @@ export default function QuebraUmidadeClient({ isPro = false, userName }: { isPro
           },
           professionalData: {
             responsavel: responsavelTecnico,
-            creaCrtq: profile?.creaCrtq || "",
-            conselhoEstado: profile?.conselhoEstado || "",
-            logoUrl: profile?.logoUrl || ""
+            creaCrtq: "",
+            conselhoEstado: "",
+            logoUrl: ""
           },
           clientData: {
             cliente: produtor,
@@ -393,7 +393,7 @@ export default function QuebraUmidadeClient({ isPro = false, userName }: { isPro
                   Imprimir
                 </button>
                 <button
-                  onClick={handleExportPDF}
+                  onClick={() => handleExportPDF()}
                   disabled={!isFormValid || !isSaved}
                   className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-emerald-600 border border-transparent rounded-lg text-sm font-bold text-white hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -825,13 +825,6 @@ export default function QuebraUmidadeClient({ isPro = false, userName }: { isPro
             {/* Topo do Laudo / Cabeçalho com Espaço Adicional (Ajustado) */}
             <div className="flex justify-between items-center border-b pb-6 border-neutral-200">
               <div className="flex items-center gap-4">
-                {profile?.logoUrl && (
-                  <img 
-                    src={profile.logoUrl} 
-                    alt="Logo Agrônomo" 
-                    className="h-12 w-auto object-contain max-w-[150px] mr-2" 
-                  />
-                )}
                 <div className="space-y-2">
                   <span className="text-3xl font-extrabold text-emerald-855 tracking-tight block">
                     Talhão<span className="text-emerald-600">Digital</span>
@@ -854,11 +847,6 @@ export default function QuebraUmidadeClient({ isPro = false, userName }: { isPro
                   <span className="text-neutral-400 block font-semibold uppercase">Responsável Técnico</span>
                   <span className="text-sm font-bold text-neutral-800 mt-0.5 block flex flex-col">
                     <span>{responsavelTecnico}</span>
-                    {profile?.creaCrtq && (
-                      <span className="text-[10px] text-neutral-500 font-bold tracking-normal mt-0.5 normal-case">
-                        CREA/CRTQ: {profile.creaCrtq}/{profile.conselhoEstado}
-                      </span>
-                    )}
                   </span>
                 </div>
                 <div>

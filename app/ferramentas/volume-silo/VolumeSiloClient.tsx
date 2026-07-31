@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { ArrowLeft, Printer, Lock, Download, Info, HelpCircle, Warehouse, Save, Share2 } from "lucide-react";
+import { ArrowLeft, Printer, Lock, Download, Info, HelpCircle, Warehouse, Save } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import Header from "@/components/Header";
@@ -102,7 +102,7 @@ export default function VolumeSiloClient({ isPro, userName }: VolumeSiloClientPr
       fetch(`/api/reports/${reportId}`)
         .then((res) => { if (!res.ok) throw new Error("Erro ao carregar"); return res.json(); })
         .then((data) => {
-          if (data && data.inputs && data.clientData) {
+          if (data?.inputs && data?.clientData) {
             setTipoSilo(data.inputs.tipoSilo || "trincheira");
             setTrinComprimento(Number(data.inputs.trinComprimento || 30));
             setTrinLarguraBase(Number(data.inputs.trinLarguraBase || 4));
@@ -249,9 +249,9 @@ export default function VolumeSiloClient({ isPro, userName }: VolumeSiloClientPr
           results: { volumeM3, capacidadeTon, numCargas },
           professionalData: {
             responsavel,
-            creaCrtq: profile?.creaCrtq || "",
-            conselhoEstado: profile?.conselhoEstado || "",
-            logoUrl: profile?.logoUrl || ""
+            creaCrtq: "",
+            conselhoEstado: "",
+            logoUrl: ""
           },
           clientData: { cliente, propriedade, nomeLaudo }
         })
@@ -565,7 +565,7 @@ export default function VolumeSiloClient({ isPro, userName }: VolumeSiloClientPr
                   Imprimir
                 </button>
                 <button
-                  onClick={handleGerarPdf}
+                  onClick={() => handleGerarPdf()}
                   disabled={!isFormValid || !isSaved || gerandoPdf}
                   className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-emerald-600 border border-transparent rounded-lg text-sm font-bold text-white hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >

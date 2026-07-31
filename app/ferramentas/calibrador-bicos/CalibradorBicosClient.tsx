@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { ArrowLeft, Printer, Lock, Download, Info, HelpCircle, Save, Share2 } from "lucide-react";
+import { ArrowLeft, Printer, Lock, Download, Info, HelpCircle, Save } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import Header from "@/components/Header";
@@ -69,7 +69,7 @@ export default function CalibradorBicosClient({ isPro, userName }: CalibradorBic
       fetch(`/api/reports/${reportId}`)
         .then((res) => { if (!res.ok) throw new Error("Erro ao carregar"); return res.json(); })
         .then((data) => {
-          if (data && data.inputs && data.clientData) {
+          if (data?.inputs && data?.clientData) {
             setVazaoDesejada(Number(data.inputs.vazaoDesejada || 150));
             setEspacamento(Number(data.inputs.espacamento || 0.5));
             setVelocidade(Number(data.inputs.velocidade || 12));
@@ -118,9 +118,9 @@ export default function CalibradorBicosClient({ isPro, userName }: CalibradorBic
   // Proteção Anti-PrintScreen
   useEffect(() => {
     if (isPro) return;
-    const handleKeyUp = (e: KeyboardEvent) => {
+    const handleKeyUp = async (e: KeyboardEvent) => {
       if (e.key === "PrintScreen") {
-        try { navigator.clipboard?.writeText(""); } catch (err) {}
+        try { await navigator.clipboard?.writeText(""); } catch (err) {}
         alert("🔒 A captura de tela deste relatório é bloqueada no Plano Gratuito. Assine o Plano Pro!");
       }
     };
@@ -157,9 +157,9 @@ export default function CalibradorBicosClient({ isPro, userName }: CalibradorBic
           results: { vazaoCalculadaBico, mediaMedida, desvioBico1, desvioBico2, desvioBico3, todosBicosOk },
           professionalData: {
             responsavel,
-            creaCrtq: profile?.creaCrtq || "",
-            conselhoEstado: profile?.conselhoEstado || "",
-            logoUrl: profile?.logoUrl || ""
+            creaCrtq: "",
+            conselhoEstado: "",
+            logoUrl: ""
           },
           clientData: { cliente, propriedade, nomeLaudo }
         })
@@ -256,6 +256,7 @@ export default function CalibradorBicosClient({ isPro, userName }: CalibradorBic
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <button
+              type="button"
               onClick={() => { router.push('/dashboard'); router.refresh(); }}
               className="inline-flex items-center text-sm font-medium text-neutral-500 hover:text-neutral-900 mb-2 transition-colors"
             >
@@ -277,6 +278,7 @@ export default function CalibradorBicosClient({ isPro, userName }: CalibradorBic
             {isPro ? (
               <>
                 <button
+                  type="button"
                   onClick={handleSaveOnly}
                   disabled={!isFormValid || loadingSave}
                   className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-emerald-50 border border-emerald-200 rounded-lg text-sm font-bold text-emerald-800 hover:bg-emerald-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -285,6 +287,7 @@ export default function CalibradorBicosClient({ isPro, userName }: CalibradorBic
                   {loadingSave ? "Salvando..." : "Salvar"}
                 </button>
                 <button
+                  type="button"
                   onClick={handleImprimir}
                   disabled={!isFormValid || !isSaved}
                   className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-white border border-neutral-200 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -293,7 +296,8 @@ export default function CalibradorBicosClient({ isPro, userName }: CalibradorBic
                   Imprimir
                 </button>
                 <button
-                  onClick={handleGerarPdf}
+                  type="button"
+                  onClick={() => handleGerarPdf()}
                   disabled={!isFormValid || !isSaved || gerandoPdf}
                   className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-emerald-600 border border-transparent rounded-lg text-sm font-bold text-white hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -465,7 +469,7 @@ export default function CalibradorBicosClient({ isPro, userName }: CalibradorBic
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">Propriedade / Fazenda *</label>
+                  <label htmlFor="propriedadeBicos" className="block text-xs font-bold text-neutral-700 uppercase mb-1">Propriedade / Fazenda *</label>
                   <input
                     type="text"
                     value={propriedade}
@@ -478,7 +482,7 @@ export default function CalibradorBicosClient({ isPro, userName }: CalibradorBic
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">Nome do Laudo *</label>
+                  <label htmlFor="nomeLaudoBicos" className="block text-xs font-bold text-neutral-700 uppercase mb-1">Nome do Laudo *</label>
                   <input
                     type="text"
                     value={nomeLaudo}
@@ -532,11 +536,11 @@ export default function CalibradorBicosClient({ isPro, userName }: CalibradorBic
                   </div>
                 </div>
 
-                {!isPro ? null : !isFormValid ? (
+                {isPro && !isFormValid && (
                   <div className="mt-3 p-3 rounded-xl bg-red-900/40 border border-red-500/30 text-xs text-red-200 relative z-10">
                     ⚠️ Preencha todos os campos obrigatórios para emitir o Laudo.
                   </div>
-                ) : null}
+                )}
               </div>
 
               {/* Detalhamento das Fontes e Gráfico SVG */}

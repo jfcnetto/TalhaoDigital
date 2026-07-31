@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { ArrowLeft, Printer, Lock, Download, Info, HelpCircle, Save, Share2 } from "lucide-react";
+import { ArrowLeft, Printer, Lock, Download, Info, HelpCircle, Save } from "lucide-react";
 import ShareButton from "@/components/ShareButton";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -88,7 +88,7 @@ export default function BalanceadorNpkClient({ isPro, userName }: BalanceadorNpk
           return res.json();
         })
         .then((data) => {
-          if (data && data.inputs && data.clientData) {
+          if (data?.inputs && data?.clientData) {
             setMetaN(Number(data.inputs.metaN || 0));
             setMetaP(Number(data.inputs.metaP || 0));
             setMetaK(Number(data.inputs.metaK || 0));
@@ -178,9 +178,9 @@ export default function BalanceadorNpkClient({ isPro, userName }: BalanceadorNpk
           },
           professionalData: {
             responsavel: responsavel,
-            creaCrtq: profile?.creaCrtq || "",
-            conselhoEstado: profile?.conselhoEstado || "",
-            logoUrl: profile?.logoUrl || ""
+            creaCrtq: "",
+            conselhoEstado: "",
+            logoUrl: ""
           },
           clientData: {
             cliente: cliente,
@@ -360,6 +360,7 @@ export default function BalanceadorNpkClient({ isPro, userName }: BalanceadorNpk
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <button
+              type="button"
               onClick={() => {
                 router.push('/dashboard');
                 router.refresh();
@@ -384,6 +385,7 @@ export default function BalanceadorNpkClient({ isPro, userName }: BalanceadorNpk
             {isPro ? (
               <>
                 <button
+                  type="button"
                   onClick={handleSaveOnly}
                   disabled={!isFormValid || loadingSave}
                   className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-emerald-50 border border-emerald-200 rounded-lg text-sm font-bold text-emerald-800 hover:bg-emerald-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -392,6 +394,7 @@ export default function BalanceadorNpkClient({ isPro, userName }: BalanceadorNpk
                   {loadingSave ? "Salvando..." : "Salvar"}
                 </button>
                 <button
+                  type="button"
                   onClick={handleImprimir}
                   disabled={!isFormValid || !isSaved}
                   className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-white border border-neutral-200 rounded-lg text-sm font-medium text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -400,7 +403,8 @@ export default function BalanceadorNpkClient({ isPro, userName }: BalanceadorNpk
                   Imprimir
                 </button>
                 <button
-                  onClick={handleGerarPdf}
+                  type="button"
+                  onClick={() => handleGerarPdf()}
                   disabled={!isFormValid || !isSaved || gerandoPdf}
                   className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-emerald-600 border border-transparent rounded-lg text-sm font-bold text-white hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -636,7 +640,7 @@ export default function BalanceadorNpkClient({ isPro, userName }: BalanceadorNpk
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">Propriedade / Fazenda *</label>
+                  <label htmlFor="propriedade" className="block text-xs font-bold text-neutral-700 uppercase mb-1">Propriedade / Fazenda *</label>
                   <input
                     type="text"
                     value={propriedade}
@@ -649,7 +653,7 @@ export default function BalanceadorNpkClient({ isPro, userName }: BalanceadorNpk
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-neutral-700 uppercase mb-1">Nome do Laudo *</label>
+                  <label htmlFor="nomeLaudo" className="block text-xs font-bold text-neutral-700 uppercase mb-1">Nome do Laudo *</label>
                   <input
                     type="text"
                     value={nomeLaudo}
@@ -705,15 +709,16 @@ export default function BalanceadorNpkClient({ isPro, userName }: BalanceadorNpk
 
                 {/* O aviso vermelho foi removido daqui para evitar redundância e confusão */}
 
-                {!isPro ? null : !isFormValid ? (
+                {isPro && !isFormValid && (
                   <div className="mt-3 p-3 rounded-xl bg-red-900/40 border border-red-500/30 text-xs text-red-200 relative z-10 animate-pulse">
                     ⚠️ Preencha o Responsável, Produtor e a Propriedade para emitir o Laudo.
                   </div>
-                ) : !isSaved ? (
+                )}
+                {isPro && isFormValid && !isSaved && (
                   <div className="mt-3 p-3 rounded-xl bg-amber-900/40 border border-amber-500/30 text-xs text-amber-200 relative z-10 animate-pulse">
                     ⚠️ Clique em "Salvar" no topo para gravar no histórico e liberar a emissão do Laudo.
                   </div>
-                ) : null}
+                )}
               </div>
 
               {/* Detalhamento das Fontes e Gráfico SVG */}

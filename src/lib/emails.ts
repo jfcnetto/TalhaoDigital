@@ -42,7 +42,7 @@ export async function sendBillingRecoveryEmail({
       { id: 'price_mock_mensal', name: 'Plano Mensal Pro', amount: 3990, interval: 'month' },
       { id: 'price_mock_trimestral', name: 'Plano Trimestral Pro', amount: 11370, interval: 'month' },
       { id: 'price_mock_semestral', name: 'Plano Semestral Pro', amount: 21540, interval: 'month' },
-    ];
+    ] as any;
   }
 
   // Ordenar planos pelo valor

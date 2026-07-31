@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import { 
   Users, Shield, Award, CreditCard, RefreshCw, 
   CheckCircle, XCircle, AlertTriangle, Loader2, 
-  TrendingUp, DollarSign, ExternalLink, Mail, ArrowUpRight,
-  Settings, Key, Eye, EyeOff
+  TrendingUp, DollarSign, ExternalLink, Mail,
+  Settings, Eye, EyeOff
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Calculator, FileText, Info, HelpCircle, Printer, ArrowLeft, Lock, Download, Save, Share2 } from "lucide-react";
+import { Calculator, FileText, Info, HelpCircle, Printer, ArrowLeft, Lock, Download, Save } from "lucide-react";
 import ShareButton from "@/components/ShareButton";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";

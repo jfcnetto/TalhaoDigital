@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { ArrowLeft, Printer, Lock, Download, Info, HelpCircle, Scale, TrendingUp, Save, Share2 } from "lucide-react";
+import { ArrowLeft, Printer, Lock, Download, Info, HelpCircle, Scale, TrendingUp, Save } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import Header from "@/components/Header";
@@ -184,9 +184,9 @@ export default function RendimentoCarcacaClient({ isPro, userName }: RendimentoC
           results: { rcCalculado, pcqKg, arrobas, faturamentoTotal, precoKgVivoEquiv },
           professionalData: {
             responsavel,
-            creaCrtq: profile?.creaCrtq || "",
-            conselhoEstado: profile?.conselhoEstado || "",
-            logoUrl: profile?.logoUrl || ""
+            creaCrtq: "",
+            conselhoEstado: "",
+            logoUrl: ""
           },
           clientData: { cliente, propriedade, nomeLaudo }
         })
@@ -393,7 +393,7 @@ export default function RendimentoCarcacaClient({ isPro, userName }: RendimentoC
                   Imprimir
                 </button>
                 <button
-                  onClick={handleGerarPdf}
+                  onClick={() => handleGerarPdf()}
                   disabled={!isFormValid || erroInviavel || !isSaved || gerandoPdf}
                   className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-emerald-600 border border-transparent rounded-lg text-sm font-bold text-white hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >

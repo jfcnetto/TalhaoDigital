@@ -166,7 +166,7 @@ export default function PerdaColheitaClient({ isPro, userName }: PerdaColheitaCl
                   Imprimir
                 </button>
                 <button
-                  onClick={handleGerarPdf}
+                  onClick={() => handleGerarPdf()}
                   disabled={!isFormValid || gerandoPdf}
                   className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-emerald-600 border border-transparent rounded-lg text-sm font-bold text-white hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >

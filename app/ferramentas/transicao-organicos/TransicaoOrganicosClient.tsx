@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Printer, Lock, Download, Info, HelpCircle, Scale, Leaf } from "lucide-react";
+import { ArrowLeft, Printer, Lock, Download, Info, HelpCircle, Scale, Leaf, Save } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import ShareButton from "@/components/ShareButton";
 
 interface TransicaoOrganicosClientProps {
   isPro: boolean;
@@ -171,6 +173,11 @@ const PRESETS: Record<CropPresetType, { nome: string; data: CropPresetValues }> 
 };
 
 export default function TransicaoOrganicosClient({ isPro, userName }: TransicaoOrganicosClientProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const reportId = searchParams.get('reportId');
+  const autoDownload = searchParams.get('autoDownload');
+  const initialInputsRef = useRef<any>(null);
   const [preset, setPreset] = useState<CropPresetType>("cafe");
 
   // Parâmetros Gerais
@@ -196,14 +203,51 @@ export default function TransicaoOrganicosClient({ isPro, userName }: TransicaoO
   // Laudo Técnico
   const [responsavel, setResponsavel] = useState<string>(userName || "");
   const [cliente, setCliente] = useState<string>("");
+  const [propriedade, setPropriedade] = useState<string>("");
+  const [nomeLaudo, setNomeLaudo] = useState<string>("");
   const [showValidationError, setShowValidationError] = useState<boolean>(false);
   const [gerandoPdf, setGerandoPdf] = useState(false);
+  const [loadingSave, setLoadingSave] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
 
   const isFormValid = responsavel.trim() !== "" && cliente.trim() !== "";
 
   // ======================================================
   // PROCESSAMENTO DE CÁLCULO E PROJEÇÕES
   // ======================================================
+  
+  useEffect(() => {
+    if (initialInputsRef.current && isSaved) {
+      const isChanged =
+        preset !== initialInputsRef.current.preset ||
+        areaHa !== initialInputsRef.current.areaHa ||
+        investimentoInicial !== initialInputsRef.current.investimentoInicial ||
+        anosTransicao !== initialInputsRef.current.anosTransicao ||
+        prodConv !== initialInputsRef.current.prodConv ||
+        precoConv !== initialInputsRef.current.precoConv ||
+        custoConv !== initialInputsRef.current.custoConv ||
+        prodTrans !== initialInputsRef.current.prodTrans ||
+        precoTrans !== initialInputsRef.current.precoTrans ||
+        custoTrans !== initialInputsRef.current.custoTrans ||
+        prodOrg !== initialInputsRef.current.prodOrg ||
+        precoOrg !== initialInputsRef.current.precoOrg ||
+        custoOrg !== initialInputsRef.current.custoOrg ||
+        cliente !== initialInputsRef.current.cliente ||
+        propriedade !== initialInputsRef.current.propriedade ||
+        nomeLaudo !== initialInputsRef.current.nomeLaudo;
+
+      if (isChanged) {
+        setIsSaved(false);
+      }
+    }
+  }, [
+    preset, areaHa, investimentoInicial, anosTransicao,
+    prodConv, precoConv, custoConv,
+    prodTrans, precoTrans, custoTrans,
+    prodOrg, precoOrg, custoOrg,
+    cliente, propriedade, nomeLaudo
+  ]);
   const lucroConvAnual = areaHa * (prodConv * precoConv - custoConv);
   
   // Projeção ano a ano (Anos 0 a 5)
@@ -338,9 +382,9 @@ export default function TransicaoOrganicosClient({ isPro, userName }: TransicaoO
           },
           professionalData: {
             responsavel,
-            creaCrtq: profile?.creaCrtq || "",
-            conselhoEstado: profile?.conselhoEstado || "",
-            logoUrl: profile?.logoUrl || ""
+            creaCrtq: "",
+            conselhoEstado: "",
+            logoUrl: ""
           },
           clientData: { cliente, propriedade, nomeLaudo }
         })
@@ -614,7 +658,7 @@ export default function TransicaoOrganicosClient({ isPro, userName }: TransicaoO
                   Imprimir
                 </button>
                 <button
-                  onClick={handleGerarPdf}
+                  onClick={() => handleGerarPdf()}
                   disabled={!isFormValid || !isSaved || gerandoPdf}
                   className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-emerald-600 border border-transparent rounded-lg text-sm font-bold text-white hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >

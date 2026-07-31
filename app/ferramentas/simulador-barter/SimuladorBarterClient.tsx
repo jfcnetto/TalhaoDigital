@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { ArrowLeft, Printer, Lock, Download, Info, HelpCircle, Scale, Coins, Save, Share2 } from "lucide-react";
+import { ArrowLeft, Printer, Lock, Download, Info, HelpCircle, Scale, Coins, Save } from "lucide-react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import Header from "@/components/Header";
@@ -178,7 +178,7 @@ export default function SimuladorBarterClient({ isPro, userName }: SimuladorBart
       fetch(`/api/reports/${reportId}`)
         .then((res) => { if (!res.ok) throw new Error("Erro ao carregar"); return res.json(); })
         .then((data) => {
-          if (data && data.inputs && data.clientData) {
+          if (data?.inputs && data?.clientData) {
             setCommodity(data.inputs.commodity || "soja");
             setAreaHa(Number(data.inputs.areaHa || 100));
             setProdutividade(Number(data.inputs.produtividade || 60));
@@ -324,9 +324,9 @@ export default function SimuladorBarterClient({ isPro, userName }: SimuladorBart
           },
           professionalData: {
             responsavel,
-            creaCrtq: profile?.creaCrtq || "",
-            conselhoEstado: profile?.conselhoEstado || "",
-            logoUrl: profile?.logoUrl || ""
+            creaCrtq: "",
+            conselhoEstado: "",
+            logoUrl: ""
           },
           clientData: { cliente, propriedade, nomeLaudo }
         })
@@ -593,7 +593,7 @@ export default function SimuladorBarterClient({ isPro, userName }: SimuladorBart
                   Imprimir
                 </button>
                 <button
-                  onClick={handleGerarPdf}
+                  onClick={() => handleGerarPdf()}
                   disabled={!isFormValid || !isSaved || gerandoPdf}
                   className="flex-1 md:flex-none inline-flex justify-center items-center px-4 py-2 bg-emerald-600 border border-transparent rounded-lg text-sm font-bold text-white hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >

@@ -224,3 +224,10 @@
   margin-left: 0 !important;
   margin-right: auto !important;
 }
+
+/* Proteção Anti-Cópia (Impressão) para Plano Gratuito */
+@media print {
+  .select-none {
+    display: none !important;
+  }
+}

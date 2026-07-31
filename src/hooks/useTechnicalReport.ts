@@ -94,7 +94,7 @@ export function useTechnicalReport({
   // 2. Monitorar alterações nos inputs para invalidar o status de salvo
   useEffect(() => {
     if (initialInputsRef.current) {
-      const currentSnapshot = {
+      const currentSnapshot: Record<string, any> = {
         ...inputs,
         cliente,
         propriedade,
